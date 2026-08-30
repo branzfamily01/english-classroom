@@ -79,9 +79,10 @@ for name in legacy_policy.get("files", []):
     check((ROOT / "materials/evergreen/lesson8" / name).is_file(), f"legacy allowlist file missing: {name}")
 
 eg = read("materials/evergreen/lesson8/app-main.js")
-check("audioButton(q.full)" not in eg, "Evergreen EX1 answer-leaking audio returned")
+check('<div class="card-actions">${audioButton(q.full)}<button class="reveal-btn">' not in eg,
+      "Evergreen EX1 problem-stage answer audio returned")
 check("${audioButton(q.answer)}<div class=\"choices\">" not in eg,
-      "Evergreen EX2 answer-leaking audio returned")
+      "Evergreen EX2 problem-stage answer audio returned")
 check("audioButton(q.en.replace(/\\(\\s*\\)/g, 'blank'))" in eg,
       "Evergreen EX1 blank audio fix missing")
 check("${audioButton(q.prompt)}" in eg, "Evergreen EX2 prompt audio fix missing")
