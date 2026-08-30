@@ -27,6 +27,7 @@ jobs:
           base64 --decode /tmp/evergreen-l9-package.b64 > /tmp/evergreen-l9-package.zip
           unzip -t /tmp/evergreen-l9-package.zip
           unzip -o /tmp/evergreen-l9-package.zip -d .
+          rm -f .github/workflows/bootstrap-evergreen-l9.yml
 
       - name: Validate before commit
         shell: bash
@@ -49,7 +50,6 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf _eg9_bootstrap
-          rm -f .github/workflows/bootstrap-evergreen-l9.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
