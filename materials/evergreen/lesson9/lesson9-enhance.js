@@ -147,6 +147,15 @@ function buildMap(){
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!drawer.hidden) close();});
 }
 
+// Engine v1's Output answer toggle re-renders only the question body without emitting
+// lesson:render. Reapply Lesson9's source underlines and breadcrumb after that local redraw.
+const stageNode = document.getElementById('stage');
+stageNode?.addEventListener('click',e=>{
+  const toggle = e.target.closest?.('[data-action="toggle-answer"]');
+  if(!toggle) return;
+  requestAnimationFrame(()=>enhanceQuestion(window.LessonEngine?.getState?.()||{}));
+});
+
 buildMap();
 window.addEventListener('lesson:render',e=>enhanceQuestion(e.detail||{}));
 requestAnimationFrame(()=>enhanceQuestion(window.LessonEngine?.getState?.()||{}));
