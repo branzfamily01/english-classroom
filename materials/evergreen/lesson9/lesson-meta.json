@@ -21,6 +21,9 @@
   "features": [
     "concept-map",
     "question-diagrams",
-    "source-underlines"
+    "source-underlines",
+    "small-step-hints",
+    "backup-technique",
+    "final-check"
   ]
 }
