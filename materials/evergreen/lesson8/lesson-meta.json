@@ -1,14 +1,16 @@
 {
   "schemaVersion": 1,
   "id": "evergreen.lesson8",
-  "title": "Evergreen Lesson8",
+  "title": "Evergreen Lesson8 — 助動詞（1）",
   "series": "Evergreen",
   "lesson": "8",
   "grade": 1,
   "subject": "English",
-  "engine": "legacy",
-  "status": "ready",
-  "teacherMode": false,
+  "engine": "v1",
+  "status": "review",
+  "questionCount": 24,
+  "formats": ["blank", "choice", "order", "translate", "write"],
+  "teacherMode": true,
   "studentExport": true,
-  "migration": "keep-legacy-phase1"
+  "features": ["concept-map", "question-diagrams", "source-underlines", "small-step-hints", "backup-technique", "final-check"]
 }
