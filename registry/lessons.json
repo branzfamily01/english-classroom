@@ -22,10 +22,10 @@
       "grade": 1,
       "engine": "v1",
       "path": "materials/evergreen/lesson9/",
-      "status": "review",
+      "status": "ready",
       "teacher": true,
       "studentExport": true,
-      "note": "First new Evergreen lesson built on Engine v1. Await Claude release-gate audit before My Hub/Netlify production use."
+      "note": "Teacher-approved Engine v1 lesson. Ready for My Hub teacher use. Student yearly-site publication remains a separate explicit release step."
     },
     {
       "id": "clover.lesson9",
