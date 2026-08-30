@@ -1,0 +1,57 @@
+name: Bootstrap Evergreen Lesson9
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '_eg9_bootstrap/**'
+      - '.github/workflows/bootstrap-evergreen-l9.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Rebuild Evergreen L9 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat _eg9_bootstrap/part* > /tmp/evergreen-l9-package.b64
+          base64 --decode /tmp/evergreen-l9-package.b64 > /tmp/evergreen-l9-package.zip
+          unzip -t /tmp/evergreen-l9-package.zip
+          unzip -o /tmp/evergreen-l9-package.zip -d .
+
+      - name: Validate before commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check materials/evergreen/lesson9/lesson-data.js
+          node --check materials/evergreen/lesson9/lesson-references.js
+          node --check materials/evergreen/lesson9/lesson9-enhance.js
+          python tools/validate.py
+          rm -rf /tmp/eg9-student
+          python tools/student-export/export_lesson.py --lesson materials/evergreen/lesson9 --out /tmp/eg9-student
+          test -f /tmp/eg9-student/materials/evergreen/lesson9/lesson-references.js
+          test -f /tmp/eg9-student/materials/evergreen/lesson9/lesson9-enhance.js
+          test -f /tmp/eg9-student/materials/evergreen/lesson9/lesson9.css
+          test ! -e /tmp/eg9-student/materials/evergreen/lesson9/source-lock.json
+          test ! -e /tmp/eg9-student/_teacher
+
+      - name: Commit final Evergreen L9 implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _eg9_bootstrap
+          rm -f .github/workflows/bootstrap-evergreen-l9.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Build Evergreen Lesson9 with visual map layer'
+          git push
