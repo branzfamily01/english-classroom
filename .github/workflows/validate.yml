@@ -31,6 +31,13 @@ jobs:
           node --check materials/evergreen/lesson9/lesson-references.js
           node --check materials/evergreen/lesson9/lesson9-learning.js
           node --check materials/evergreen/lesson9/lesson9-enhance.js
+          node --check materials/evergreen/lesson10/lesson-data.js
+          node --check materials/evergreen/lesson10/lesson-references.js
+          node --check materials/evergreen/lesson10/lesson10-details-a.js
+          node --check materials/evergreen/lesson10/lesson10-details-b.js
+          node --check materials/evergreen/lesson10/lesson10-details-c.js
+          node --check materials/evergreen/lesson10/lesson10-learning.js
+          node --check materials/evergreen/lesson10/lesson10-enhance.js
           python tools/validate.py
       - name: Verify Evergreen Lesson8 learning layer
         run: |
@@ -68,12 +75,41 @@ jobs:
           if(!final.some(x=>x.type==='backup')) throw new Error('Final Check missing backup challenge');
           console.log('Evergreen L9 learning layer OK');
           NODE
+      - name: Verify Evergreen Lesson10 learning layer
+        run: |
+          node - <<'NODE'
+          global.window = global;
+          require('./materials/evergreen/lesson10/lesson-data.js');
+          require('./materials/evergreen/lesson10/lesson10-details-a.js');
+          require('./materials/evergreen/lesson10/lesson10-details-b.js');
+          require('./materials/evergreen/lesson10/lesson10-details-c.js');
+          require('./materials/evergreen/lesson10/lesson10-learning.js');
+          const data=global.LESSON_DATA || [];
+          if(data.length!==22) throw new Error(`expected 22 questions, got ${data.length}`);
+          for(const q of data){
+            if(!Array.isArray(q.hints) || q.hints.length<2) throw new Error(`${q.key}: needs at least two hints`);
+            if(!Array.isArray(q.outputChunks) || q.outputChunks.length<2) throw new Error(`${q.key}: needs manual output chunks`);
+            if(!Array.isArray(q.mapPath) || !q.mapPath.length) throw new Error(`${q.key}: needs mapPath`);
+            if(!q.visual?.kind) throw new Error(`${q.key}: needs question visual`);
+            for(const h of q.hints){if(!h.en || !h.jp) throw new Error(`${q.key}: hint must have English + Japanese`);}
+          }
+          for(const key of ['1-(1)','1-(2)','1-(3)','1-(4)','1-(5)','1-(6)']){
+            const q=data.find(x=>x.key===key);
+            if(!q?.questionParts?.some(p=>p.underline)) throw new Error(`${key}: source underline missing`);
+          }
+          const final=global.LESSON_FINAL_CHECK?.sections || [];
+          if(final.length<5) throw new Error('Final Check must contain quick response, distinction, backup, try, finish');
+          if(!final.some(x=>x.type==='backup')) throw new Error('Final Check missing backup challenge');
+          console.log('Evergreen L10 learning layer OK');
+          NODE
       - name: Verify locked Clover source parity
         run: python tools/verify_clover_source_parity.py
       - name: Verify Evergreen Lesson8 authoritative source parity
         run: python tools/verify_evergreen8_source_parity.py
       - name: Verify Evergreen Lesson9 authoritative source parity
         run: python tools/verify_evergreen9_source_parity.py
+      - name: Verify Evergreen Lesson10 authoritative source parity
+        run: python tools/verify_evergreen10_source_parity.py
       - name: Test allowlist lesson exports
         run: |
           rm -rf /tmp/student-export
@@ -84,6 +120,7 @@ jobs:
           test ! -e /tmp/student-export/materials/clover/lesson9/stale-private.txt
           python tools/student-export/export_lesson.py --lesson materials/evergreen/lesson8 --out /tmp/student-export
           python tools/student-export/export_lesson.py --lesson materials/evergreen/lesson9 --out /tmp/student-export
+          python tools/student-export/export_lesson.py --lesson materials/evergreen/lesson10 --out /tmp/student-export
           test -f /tmp/student-export/materials/clover/lesson9/index.html
           test -f /tmp/student-export/materials/evergreen/lesson8/index.html
           test -f /tmp/student-export/materials/evergreen/lesson8/lesson-references.js
@@ -95,8 +132,17 @@ jobs:
           test -f /tmp/student-export/materials/evergreen/lesson9/lesson9-learning.js
           test -f /tmp/student-export/materials/evergreen/lesson9/lesson9-enhance.js
           test -f /tmp/student-export/materials/evergreen/lesson9/lesson9.css
+          test -f /tmp/student-export/materials/evergreen/lesson10/index.html
+          test -f /tmp/student-export/materials/evergreen/lesson10/lesson-references.js
+          test -f /tmp/student-export/materials/evergreen/lesson10/lesson10-details-a.js
+          test -f /tmp/student-export/materials/evergreen/lesson10/lesson10-details-b.js
+          test -f /tmp/student-export/materials/evergreen/lesson10/lesson10-details-c.js
+          test -f /tmp/student-export/materials/evergreen/lesson10/lesson10-learning.js
+          test -f /tmp/student-export/materials/evergreen/lesson10/lesson10-enhance.js
+          test -f /tmp/student-export/materials/evergreen/lesson10/lesson10.css
           test ! -e /tmp/student-export/materials/evergreen/lesson8/source-lock.json
           test ! -e /tmp/student-export/materials/evergreen/lesson9/source-lock.json
+          test ! -e /tmp/student-export/materials/evergreen/lesson10/source-lock.json
           test ! -e /tmp/student-export/_teacher
           ! grep -R "_teacher/" /tmp/student-export
           python - <<'PY'
@@ -110,7 +156,11 @@ jobs:
               except RuntimeError: pass
               else: raise SystemExit(f'unsafe target accepted: {bad}')
           allowed=set(mod.SAFE_META_KEYS)|{'teacherMode'}
-          for path in (Path('/tmp/student-export/materials/clover/lesson9/lesson-meta.json'),Path('/tmp/student-export/materials/evergreen/lesson8/lesson-meta.json'),Path('/tmp/student-export/materials/evergreen/lesson9/lesson-meta.json')):
+          for path in (
+              Path('/tmp/student-export/materials/clover/lesson9/lesson-meta.json'),
+              Path('/tmp/student-export/materials/evergreen/lesson8/lesson-meta.json'),
+              Path('/tmp/student-export/materials/evergreen/lesson9/lesson-meta.json'),
+              Path('/tmp/student-export/materials/evergreen/lesson10/lesson-meta.json')):
               meta=json.loads(path.read_text(encoding='utf-8'))
               assert meta.get('teacherMode') is False, path
               assert set(meta)<=allowed, (path,set(meta)-allowed)
@@ -122,7 +172,7 @@ jobs:
             --year 2026 \
             --title "Gate Test" \
             --out /tmp/year-gate \
-            --lesson materials/evergreen/lesson9; then
+            --lesson materials/evergreen/lesson10; then
             echo "ERROR: review lesson escaped production release gate"
             exit 1
           fi
@@ -134,7 +184,8 @@ jobs:
             --allow-review \
             --lesson materials/clover/lesson9 \
             --lesson materials/evergreen/lesson8 \
-            --lesson materials/evergreen/lesson9
+            --lesson materials/evergreen/lesson9 \
+            --lesson materials/evergreen/lesson10
           test -f /tmp/year-site/index.html
           test -f /tmp/year-site/robots.txt
           test -f /tmp/year-site/release-manifest.json
@@ -142,4 +193,6 @@ jobs:
           test -f /tmp/year-site/materials/evergreen/lesson8/lesson8.css
           test -f /tmp/year-site/materials/evergreen/lesson9/lesson9-learning.js
           test -f /tmp/year-site/materials/evergreen/lesson9/lesson9.css
+          test -f /tmp/year-site/materials/evergreen/lesson10/lesson10-learning.js
+          test -f /tmp/year-site/materials/evergreen/lesson10/lesson10.css
           test ! -e /tmp/year-site/_teacher
