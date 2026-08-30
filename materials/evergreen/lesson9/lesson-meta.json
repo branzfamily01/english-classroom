@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "evergreen.lesson9",
+  "title": "Evergreen Lesson9｜助動詞（2）",
+  "series": "Evergreen",
+  "lesson": "9",
+  "grade": 1,
+  "subject": "English",
+  "engine": "v1",
+  "status": "ready",
+  "questionCount": 23,
+  "formats": [
+    "blank",
+    "choice",
+    "order",
+    "translate",
+    "write"
+  ],
+  "teacherMode": true,
+  "studentExport": true
+}
