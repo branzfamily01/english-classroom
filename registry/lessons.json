@@ -3,16 +3,16 @@
   "lessons": [
     {
       "id": "evergreen.lesson8",
-      "title": "Evergreen Lesson8",
+      "title": "Evergreen Lesson8 — 助動詞（1）",
       "series": "Evergreen",
       "lesson": "8",
       "grade": 1,
-      "engine": "legacy",
+      "engine": "v1",
       "path": "materials/evergreen/lesson8/",
       "status": "ready",
       "teacher": true,
       "studentExport": true,
-      "note": "Phase 1: corrected legacy implementation. Do not schema-migrate yet."
+      "note": "Rebuilt with the Lesson9 Engine v1 method for ongoing teacher use. Internal lesson status remains review until classroom visual/content confirmation; student yearly-site release remains separately gated."
     },
     {
       "id": "evergreen.lesson9",
