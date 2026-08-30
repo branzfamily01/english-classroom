@@ -1,0 +1,12 @@
+{
+  "policy": "allowlist",
+  "files": [
+    "lesson-references.js",
+    "lesson10-details-a.js",
+    "lesson10-details-b.js",
+    "lesson10-details-c.js",
+    "lesson10-learning.js",
+    "lesson10-enhance.js",
+    "lesson10.css"
+  ]
+}
