@@ -4,11 +4,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ALLOWED_ENGINES = {"v1", "legacy"}
+SAFE_META_KEYS = (
+    "schemaVersion", "id", "title", "series", "lesson", "grade", "subject",
+    "engine", "status", "questionCount", "formats", "studentExport",
+)
 
 
 def read_json(path: Path) -> dict:
@@ -18,15 +23,30 @@ def read_json(path: Path) -> dict:
 def safe_target(root: Path, meta: dict) -> Path:
     series = str(meta["series"]).strip().lower().replace(" ", "-")
     lesson = str(meta["lesson"]).strip()
-    return root / "materials" / series / f"lesson{lesson}"
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", series):
+        raise RuntimeError(f"unsafe series slug: {series!r}")
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", lesson):
+        raise RuntimeError(f"unsafe lesson slug: {lesson!r}")
+    root = root.resolve()
+    target = (root / "materials" / series / f"lesson{lesson}").resolve()
+    if not target.is_relative_to(root):
+        raise RuntimeError(f"student target escapes output root: {target}")
+    return target
 
 
 def clean_student_meta(meta: dict) -> dict:
-    result = dict(meta)
+    result = {key: meta[key] for key in SAFE_META_KEYS if key in meta}
     result["teacherMode"] = False
-    result.pop("teacherNotes", None)
-    result.pop("private", None)
     return result
+
+
+def json_for_script(value: dict) -> str:
+    return (
+        json.dumps(value, ensure_ascii=False)
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("&", "\\u0026")
+    )
 
 
 def copy_file(src: Path, dst: Path) -> None:
@@ -34,9 +54,18 @@ def copy_file(src: Path, dst: Path) -> None:
     shutil.copy2(src, dst)
 
 
+def reset_target(target: Path) -> None:
+    if target.exists():
+        if target.is_dir():
+            shutil.rmtree(target)
+        else:
+            target.unlink()
+    target.mkdir(parents=True, exist_ok=True)
+
+
 def export_v1(lesson_dir: Path, out_root: Path, meta: dict) -> Path:
     target = safe_target(out_root, meta)
-    target.mkdir(parents=True, exist_ok=True)
+    reset_target(target)
 
     engine_src = ROOT / "_engine" / "v1"
     engine_dst = out_root / "_engine" / "v1"
@@ -51,14 +80,25 @@ def export_v1(lesson_dir: Path, out_root: Path, meta: dict) -> Path:
 
     copy_file(lesson_dir / "lesson-data.js", target / "lesson-data.js")
 
+    student_meta = clean_student_meta(meta)
     html_text = (lesson_dir / "student-index.html").read_text(encoding="utf-8")
     html_text = html_text.replace("../../../_engine/v1/", "/_engine/v1/")
+    meta_pattern = r"window\.LESSON_META\s*=\s*\{.*?\};"
+    if not re.search(meta_pattern, html_text, re.S):
+        raise RuntimeError("student-index.html is missing window.LESSON_META")
+    html_text = re.sub(
+        meta_pattern,
+        f"window.LESSON_META = {json_for_script(student_meta)};",
+        html_text,
+        count=1,
+        flags=re.S,
+    )
     if "_teacher/" in html_text or "teacher.js" in html_text:
         raise RuntimeError("student-index.html references teacher code")
     (target / "index.html").write_text(html_text, encoding="utf-8")
 
     (target / "lesson-meta.json").write_text(
-        json.dumps(clean_student_meta(meta), ensure_ascii=False, indent=2) + "\n",
+        json.dumps(student_meta, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     return target
@@ -77,7 +117,7 @@ def export_legacy(lesson_dir: Path, out_root: Path, meta: dict) -> Path:
         raise RuntimeError("legacy allowlist must contain files")
 
     target = safe_target(out_root, meta)
-    target.mkdir(parents=True, exist_ok=True)
+    reset_target(target)
 
     for name in names:
         if not isinstance(name, str) or not name or name.startswith(("/", "\\")) or ".." in Path(name).parts:
@@ -97,15 +137,27 @@ def export_legacy(lesson_dir: Path, out_root: Path, meta: dict) -> Path:
 
 
 def assert_no_teacher_files(out_root: Path) -> None:
-    bad = []
+    bad_files = []
+    bad_refs = []
+    text_suffixes = {".html", ".js", ".json", ".css", ".txt", ".md"}
+    forbidden_refs = ("_teacher/", "teacher.js", "teaching.v1", '"teachermode": true')
     for path in out_root.rglob("*"):
         if not path.is_file():
             continue
         rel = path.relative_to(out_root).as_posix().lower()
         if "/_teacher/" in f"/{rel}" or "teacher.js" in rel or "teacher-notes" in rel:
-            bad.append(rel)
-    if bad:
-        raise RuntimeError("teacher files leaked into student export: " + ", ".join(bad))
+            bad_files.append(rel)
+        if path.suffix.lower() in text_suffixes:
+            try:
+                text = path.read_text(encoding="utf-8").lower()
+            except UnicodeDecodeError:
+                continue
+            if any(token in text for token in forbidden_refs):
+                bad_refs.append(rel)
+    if bad_files:
+        raise RuntimeError("teacher files leaked into student export: " + ", ".join(sorted(set(bad_files))))
+    if bad_refs:
+        raise RuntimeError("teacher references leaked into student export: " + ", ".join(sorted(set(bad_refs))))
 
 
 def export_lesson(lesson_dir: Path, out_root: Path) -> tuple[Path, dict]:
