@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "evergreen.lesson9",
-  "title": "Evergreen Lesson9｜助動詞（2）",
+  "title": "Evergreen Lesson9 — 助動詞（2）",
   "series": "Evergreen",
   "lesson": "9",
   "grade": 1,
@@ -17,5 +17,10 @@
     "write"
   ],
   "teacherMode": true,
-  "studentExport": true
+  "studentExport": true,
+  "features": [
+    "concept-map",
+    "question-diagrams",
+    "source-underlines"
+  ]
 }

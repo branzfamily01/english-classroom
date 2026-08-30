@@ -15,6 +15,19 @@
       "note": "Phase 1: corrected legacy implementation. Do not schema-migrate yet."
     },
     {
+      "id": "evergreen.lesson9",
+      "title": "Evergreen Lesson9 — 助動詞（2）",
+      "series": "Evergreen",
+      "lesson": "9",
+      "grade": 1,
+      "engine": "v1",
+      "path": "materials/evergreen/lesson9/",
+      "status": "review",
+      "teacher": true,
+      "studentExport": true,
+      "note": "First new Evergreen lesson built on Engine v1. Await Claude release-gate audit before My Hub/Netlify production use."
+    },
+    {
       "id": "clover.lesson9",
       "title": "Clover Lesson9",
       "series": "Clover",

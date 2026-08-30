@@ -1,0 +1,8 @@
+{
+  "policy": "allowlist",
+  "files": [
+    "lesson-references.js",
+    "lesson9-enhance.js",
+    "lesson9.css"
+  ]
+}

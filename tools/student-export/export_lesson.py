@@ -63,6 +63,36 @@ def reset_target(target: Path) -> None:
     target.mkdir(parents=True, exist_ok=True)
 
 
+def validate_allowlist_name(name: object) -> str:
+    if not isinstance(name, str) or not name or name.startswith(("/", "\\")):
+        raise RuntimeError(f"unsafe allowlist entry: {name!r}")
+    rel = Path(name)
+    if ".." in rel.parts:
+        raise RuntimeError(f"unsafe allowlist entry: {name!r}")
+    if "teacher" in name.lower():
+        raise RuntimeError(f"teacher-like file is not allowed in student export: {name}")
+    return name
+
+
+def copy_lesson_allowlist(lesson_dir: Path, target: Path) -> None:
+    """Copy optional lesson-specific student assets through a positive allowlist."""
+    policy_path = lesson_dir / "student-export.json"
+    if not policy_path.is_file():
+        return
+    policy = read_json(policy_path)
+    if policy.get("policy") != "allowlist":
+        raise RuntimeError("student export policy must be allowlist")
+    names = policy.get("files") or []
+    if not isinstance(names, list):
+        raise RuntimeError("student export files must be a list")
+    for raw in names:
+        name = validate_allowlist_name(raw)
+        src = lesson_dir / name
+        if not src.is_file():
+            raise FileNotFoundError(f"allowlisted file missing: {src}")
+        copy_file(src, target / name)
+
+
 def export_v1(lesson_dir: Path, out_root: Path, meta: dict) -> Path:
     target = safe_target(out_root, meta)
     reset_target(target)
@@ -79,6 +109,7 @@ def export_v1(lesson_dir: Path, out_root: Path, meta: dict) -> Path:
             raise FileNotFoundError(f"required student file missing: {src}")
 
     copy_file(lesson_dir / "lesson-data.js", target / "lesson-data.js")
+    copy_lesson_allowlist(lesson_dir, target)
 
     student_meta = clean_student_meta(meta)
     html_text = (lesson_dir / "student-index.html").read_text(encoding="utf-8")
@@ -119,11 +150,8 @@ def export_legacy(lesson_dir: Path, out_root: Path, meta: dict) -> Path:
     target = safe_target(out_root, meta)
     reset_target(target)
 
-    for name in names:
-        if not isinstance(name, str) or not name or name.startswith(("/", "\\")) or ".." in Path(name).parts:
-            raise RuntimeError(f"unsafe allowlist entry: {name!r}")
-        if "teacher" in name.lower():
-            raise RuntimeError(f"teacher-like file is not allowed in student export: {name}")
+    for raw in names:
+        name = validate_allowlist_name(raw)
         src = lesson_dir / name
         if not src.is_file():
             raise FileNotFoundError(f"allowlisted file missing: {src}")

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "authoritative": [
+    {
+      "file": "10_Evergreen English Grammar 47_Lesson9(1).pptx",
+      "sha256": "de7c94b69e5ffda7b9ee4ed5de6f421effaedb0cdf8f58e4f31c3257885c27a4",
+      "role": "basic lesson content / source examples / exercise text"
+    },
+    {
+      "source": "user-provided in chat",
+      "role": "model answers and Japanese translations",
+      "note": "Encoded into lesson-data.js"
+    }
+  ],
+  "supplementary": [
+    {
+      "file": "would often, used to.pdf",
+      "sha256": "a1c0dfabddd4ce1070b2bc887b3986e0d0ed60b22de5b731c4077bee88e87219",
+      "role": "used to / would comparison"
+    },
+    {
+      "file": "助動詞のすべて(1).pdf",
+      "sha256": "ef5579152602f68be613c6e8d9f98c465762e7a30cefc24c7e78a9edcddf00f8",
+      "role": "modal overview map"
+    },
+    {
+      "file": "助動詞　ニュアンスを基にした分類　20140617　.docx",
+      "sha256": "0ea1a910a4533cf03ac89c9cb6ac0a73903c6e13f55dd5ab56aab2aaceb34e70",
+      "role": "core-concept explanations"
+    },
+    {
+      "file": "助動詞分類　一覧.xlsx",
+      "sha256": "d7fc508b3ecd82d34fb98f3ab0e350db4de5d5e080a9d3505553a818c01def3e",
+      "role": "classification cross-check"
+    },
+    {
+      "file": "助動詞 have pp は２種類.docx",
+      "sha256": "3a8ac1c51debff20eb901349f7bde661f24f17f0491d7c73aad70dad896e1b73",
+      "role": "broader modal system context; not directly taught in Lesson 9"
+    },
+    {
+      "file": "Visual Modal Notes (2)(1).pdf",
+      "sha256": "144213a709eeb0991a48b862a9f02e7ad388ef7042eedbf04b6a53ddb0b0583b",
+      "role": "supplementary visual reference; PDF renderer could not parse this copy reliably"
+    }
+  ],
+  "policy": "PPTX and user-supplied answers/translations are authoritative. Supplementary sources inform explanations and maps only; they do not alter exercise answers."
+}
