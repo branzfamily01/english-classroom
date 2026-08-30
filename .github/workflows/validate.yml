@@ -23,6 +23,9 @@ jobs:
           node --check _engine/v1/engine.js
           node --check _teacher/v1/teacher.js
           node --check my-hub-module/teaching-panel.js
+          node --check materials/evergreen/lesson9/lesson-data.js
+          node --check materials/evergreen/lesson9/lesson-references.js
+          node --check materials/evergreen/lesson9/lesson9-enhance.js
           python tools/validate.py
       - name: Verify locked Clover source parity
         run: python tools/verify_clover_source_parity.py
@@ -35,8 +38,14 @@ jobs:
           python tools/student-export/export_lesson.py --lesson materials/clover/lesson9 --out /tmp/student-export
           test ! -e /tmp/student-export/materials/clover/lesson9/stale-private.txt
           python tools/student-export/export_lesson.py --lesson materials/evergreen/lesson8 --out /tmp/student-export
+          python tools/student-export/export_lesson.py --lesson materials/evergreen/lesson9 --out /tmp/student-export
           test -f /tmp/student-export/materials/clover/lesson9/index.html
           test -f /tmp/student-export/materials/evergreen/lesson8/index.html
+          test -f /tmp/student-export/materials/evergreen/lesson9/index.html
+          test -f /tmp/student-export/materials/evergreen/lesson9/lesson-references.js
+          test -f /tmp/student-export/materials/evergreen/lesson9/lesson9-enhance.js
+          test -f /tmp/student-export/materials/evergreen/lesson9/lesson9.css
+          test ! -e /tmp/student-export/materials/evergreen/lesson9/source-lock.json
           test ! -e /tmp/student-export/_teacher
           ! grep -R "_teacher/" /tmp/student-export
           python - <<'PY'
@@ -62,6 +71,7 @@ jobs:
           for path in (
               Path('/tmp/student-export/materials/clover/lesson9/lesson-meta.json'),
               Path('/tmp/student-export/materials/evergreen/lesson8/lesson-meta.json'),
+              Path('/tmp/student-export/materials/evergreen/lesson9/lesson-meta.json'),
           ):
               meta=json.loads(path.read_text(encoding='utf-8'))
               assert meta.get('teacherMode') is False, path
@@ -76,8 +86,10 @@ jobs:
             --title "English Test - 2026" \
             --out /tmp/year-site \
             --lesson materials/clover/lesson9 \
-            --lesson materials/evergreen/lesson8
+            --lesson materials/evergreen/lesson8 \
+            --lesson materials/evergreen/lesson9
           test -f /tmp/year-site/index.html
           test -f /tmp/year-site/robots.txt
           test -f /tmp/year-site/release-manifest.json
+          test -f /tmp/year-site/materials/evergreen/lesson9/lesson9.css
           test ! -e /tmp/year-site/_teacher
