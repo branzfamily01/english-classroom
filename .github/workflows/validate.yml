@@ -80,13 +80,24 @@ jobs:
               assert set(meta)<=allowed, (path,set(meta)-allowed)
           assert 'migration' not in json.loads(Path('/tmp/student-export/materials/evergreen/lesson8/lesson-meta.json').read_text(encoding='utf-8'))
           PY
-      - name: Test yearly Netlify-ready build
+      - name: Test yearly release gate and Netlify-ready build
         run: |
-          rm -rf /tmp/year-site
+          rm -rf /tmp/year-gate /tmp/year-site
+          if python tools/student-export/build_year_site.py \
+            --year 2026 \
+            --title "Gate Test" \
+            --out /tmp/year-gate \
+            --lesson materials/evergreen/lesson9; then
+            echo "ERROR: review lesson escaped production release gate"
+            exit 1
+          fi
+          test ! -e /tmp/year-gate/.student-site-build
+
           python tools/student-export/build_year_site.py \
             --year 2026 \
             --title "English Test - 2026" \
             --out /tmp/year-site \
+            --allow-review \
             --lesson materials/clover/lesson9 \
             --lesson materials/evergreen/lesson8 \
             --lesson materials/evergreen/lesson9
