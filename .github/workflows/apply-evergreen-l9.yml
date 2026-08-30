@@ -13,8 +13,19 @@ jobs:
       - name: Install Evergreen Lesson9
         shell: bash
         run: |
-          cat _tmp/evergreen-l9/part*.b64 > /tmp/l9.b64
+          cat \
+            _tmp/evergreen-l9/part00.b64 \
+            _tmp/evergreen-l9/part01.b64 \
+            _tmp/evergreen-l9/part02.b64 \
+            _tmp/evergreen-l9/part03.b64 \
+            _tmp/evergreen-l9/part04.b64 \
+            _tmp/evergreen-l9/part05.b64 \
+            _tmp/evergreen-l9/part060.b64 \
+            _tmp/evergreen-l9/part061.b64 \
+            _tmp/evergreen-l9/part062.b64 \
+            > /tmp/l9.b64
           base64 -d /tmp/l9.b64 > /tmp/l9.tar.gz
+          tar -tzf /tmp/l9.tar.gz >/dev/null
           tar -xzf /tmp/l9.tar.gz -C .
           node --check materials/evergreen/lesson9/lesson-data.js
           node --check materials/evergreen/lesson9/lesson-references.js
