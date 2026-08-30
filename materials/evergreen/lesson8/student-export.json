@@ -1,9 +1,9 @@
 {
   "policy": "allowlist",
   "files": [
-    "index.html",
-    "app-data.js",
-    "app-main.js",
-    "styles.css"
+    "lesson-references.js",
+    "lesson8-learning.js",
+    "lesson8-enhance.js",
+    "lesson8.css"
   ]
 }
