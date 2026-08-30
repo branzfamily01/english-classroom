@@ -25,8 +25,29 @@ jobs:
           node --check my-hub-module/teaching-panel.js
           node --check materials/evergreen/lesson9/lesson-data.js
           node --check materials/evergreen/lesson9/lesson-references.js
+          node --check materials/evergreen/lesson9/lesson9-learning.js
           node --check materials/evergreen/lesson9/lesson9-enhance.js
           python tools/validate.py
+      - name: Verify Evergreen Lesson9 learning layer
+        run: |
+          node - <<'NODE'
+          global.window = global;
+          require('./materials/evergreen/lesson9/lesson-data.js');
+          require('./materials/evergreen/lesson9/lesson9-learning.js');
+          const data=global.LESSON_DATA || [];
+          if(data.length!==23) throw new Error(`expected 23 questions, got ${data.length}`);
+          for(const q of data){
+            if(!Array.isArray(q.hints) || q.hints.length<2) throw new Error(`${q.key}: needs at least two hints`);
+            if(!Array.isArray(q.outputChunks) || q.outputChunks.length<2) throw new Error(`${q.key}: needs manual output chunks`);
+            for(const h of q.hints){
+              if(!h.en || !h.jp) throw new Error(`${q.key}: hint must have English + Japanese`);
+            }
+          }
+          const final=global.LESSON_FINAL_CHECK?.sections || [];
+          if(final.length<5) throw new Error('Final Check must contain quick response, distinction, backup, try, finish');
+          if(!final.some(x=>x.type==='backup')) throw new Error('Final Check missing backup challenge');
+          console.log('Evergreen L9 learning layer OK');
+          NODE
       - name: Verify locked Clover source parity
         run: python tools/verify_clover_source_parity.py
       - name: Verify Evergreen Lesson9 authoritative source parity
@@ -45,6 +66,7 @@ jobs:
           test -f /tmp/student-export/materials/evergreen/lesson8/index.html
           test -f /tmp/student-export/materials/evergreen/lesson9/index.html
           test -f /tmp/student-export/materials/evergreen/lesson9/lesson-references.js
+          test -f /tmp/student-export/materials/evergreen/lesson9/lesson9-learning.js
           test -f /tmp/student-export/materials/evergreen/lesson9/lesson9-enhance.js
           test -f /tmp/student-export/materials/evergreen/lesson9/lesson9.css
           test ! -e /tmp/student-export/materials/evergreen/lesson9/source-lock.json
@@ -104,5 +126,6 @@ jobs:
           test -f /tmp/year-site/index.html
           test -f /tmp/year-site/robots.txt
           test -f /tmp/year-site/release-manifest.json
+          test -f /tmp/year-site/materials/evergreen/lesson9/lesson9-learning.js
           test -f /tmp/year-site/materials/evergreen/lesson9/lesson9.css
           test ! -e /tmp/year-site/_teacher
