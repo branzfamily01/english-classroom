@@ -110,8 +110,9 @@ function buildMap(){
   btn.type='button';
   btn.id='conceptMapBtn';
   btn.className='icon-btn map-btn';
-  btn.setAttribute('aria-label','Lesson 9 全体地図');
-  btn.textContent='🗺';
+  btn.setAttribute('aria-label','Lesson 9 全体地図を開く');
+  btn.title='今どこを学んでいるか全体地図で確認';
+  btn.textContent='🗺 地図';
   toolbar.insertBefore(btn, document.getElementById('menuBtn')?.nextSibling || toolbar.firstChild);
 
   const drawer = document.createElement('div');
