@@ -85,7 +85,7 @@ for lesson in lessons:
         if fmt in {"blank", "choice"}:
             check(not answer_phrase_leaks(q.get("answer"), q.get("audioQ")), f"stage-0 audio leaks answer: {lesson_id} / {key}")
         if fmt in {"order", "write"}:
-            check(q.get("audioQ") is None, f"stage-0 English answer audio must be absent: {lesson_id} / {key}")
+            check(not q.get("audioQ"), f"stage-0 English answer audio must be absent: {lesson_id} / {key}")
 
     if lesson.get("studentExport"):
         check((ROOT / student_path).is_file(), f"student entry missing: {lesson_id}")
