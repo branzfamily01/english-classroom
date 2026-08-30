@@ -1,0 +1,49 @@
+name: Validate English Classroom
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Syntax and invariants
+        run: |
+          node --check _engine/v1/audio.js
+          node --check _engine/v1/engine.js
+          node --check _teacher/v1/teacher.js
+          node --check my-hub-module/teaching-panel.js
+          python tools/validate.py
+      - name: Test allowlist lesson exports
+        run: |
+          rm -rf /tmp/student-export
+          mkdir -p /tmp/student-export
+          python tools/student-export/export_lesson.py --lesson materials/clover/lesson9 --out /tmp/student-export
+          python tools/student-export/export_lesson.py --lesson materials/evergreen/lesson8 --out /tmp/student-export
+          test -f /tmp/student-export/materials/clover/lesson9/index.html
+          test -f /tmp/student-export/materials/evergreen/lesson8/index.html
+          test ! -e /tmp/student-export/_teacher
+          ! grep -R "_teacher/" /tmp/student-export
+      - name: Test yearly Netlify-ready build
+        run: |
+          rm -rf /tmp/year-site
+          python tools/student-export/build_year_site.py \
+            --year 2026 \
+            --title "English Test - 2026" \
+            --out /tmp/year-site \
+            --lesson materials/clover/lesson9 \
+            --lesson materials/evergreen/lesson8
+          test -f /tmp/year-site/index.html
+          test -f /tmp/year-site/robots.txt
+          test -f /tmp/year-site/release-manifest.json
+          test ! -e /tmp/year-site/_teacher
