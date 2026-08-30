@@ -24,6 +24,8 @@ jobs:
           node --check _teacher/v1/teacher.js
           node --check my-hub-module/teaching-panel.js
           python tools/validate.py
+      - name: Verify locked Clover source parity
+        run: python tools/verify_clover_source_parity.py
       - name: Test allowlist lesson exports
         run: |
           rm -rf /tmp/student-export
