@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "authoritative": [
+    {"file":"11_Evergreen English Grammar 47_Lesson10.pptx","sha256":"762bd2fc3f76cb11c842965728301cd71a07467ac980abc4c18a1e1bbf5815bf","role":"Lesson 10 source examples / exercise text / staged answers"},
+    {"file":"Evergreen 47 Lessons updated（本冊）.docx","sha256":"a2feb442ba6a841c5b29c6911e2c84925692b0e768d489b348f0b6773166e0e5","role":"authoritative Lesson 10 textbook content"},
+    {"file":"Evergreen 47 Lessons updated（解答）.docx","sha256":"ac4b0bef5b2c62bec524270b5c0245b50d3d80046445b5285859ce005eb67667","role":"model answers and Japanese translations"}
+  ],
+  "supplementary": [
+    {"file":"助動詞のすべて(2).pdf","sha256":"ef5579152602f68be613c6e8d9f98c465762e7a30cefc24c7e78a9edcddf00f8","role":"modal-system overview; Lesson 8→9→10 continuity and concept-map source"},
+    {"file":"助動詞　ニュアンスを基にした分類　20140617　(1).docx","sha256":"0ea1a910a4533cf03ac89c9cb6ac0a73903c6e13f55dd5ab56aab2aaceb34e70","role":"core modal nuance; may well / might as well / should / can’t relationships"},
+    {"file":"助動詞分類　一覧(1).xlsx","sha256":"d7fc508b3ecd82d34fb98f3ab0e350db4de5d5e080a9d3505553a818c01def3e","role":"modal classification cross-check and Lesson boundary map"},
+    {"file":"Visual Modal Notes (2)(2).pdf","sha256":"144213a709eeb0991a48b862a9f02e7ad388ef7042eedbf04b6a53ddb0b0583b","role":"supplementary visual modal-system notes"},
+    {"file":"助動詞 have pp は２種類(1).docx","sha256":"3a8ac1c51debff20eb901349f7bde661f24f17f0491d7c73aad70dad896e1b73","role":"central Lesson 10 explanation: past inference vs regret/criticism/past evaluation"},
+    {"file":"would often, used to(1).pdf","sha256":"a1c0dfabddd4ce1070b2bc887b3986e0d0ed60b22de5b731c4077bee88e87219","role":"Lesson 9 boundary context only; not directly taught in Lesson 10"}
+  ],
+  "policy": "PPTX, textbook and answer-book content are authoritative for questions, accepted answers and translations. Supplementary modal sources inform explanations, contrasts and maps only and never override the authoritative exercise answers. Numerical certainty values in supplementary notes are not treated as fixed probabilities; context and evidence govern interpretation."
+}
