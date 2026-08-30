@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "evergreen.lesson10",
+  "title": "Evergreen Lesson10 — 助動詞（3）",
+  "series": "Evergreen",
+  "lesson": "10",
+  "grade": 1,
+  "subject": "English",
+  "engine": "v1",
+  "status": "review",
+  "questionCount": 22,
+  "formats": ["blank", "order", "translate", "write"],
+  "teacherMode": true,
+  "studentExport": true,
+  "features": ["concept-map", "question-diagrams", "source-underlines", "small-step-hints", "backup-technique", "final-check"]
+}
