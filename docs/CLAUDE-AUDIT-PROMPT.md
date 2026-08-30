@@ -8,16 +8,17 @@ Do not design from theory before reading the repository.
 
 ## Important exclusions
 
-Ignore `branzfamily01/evergreen-lesson9`. It is an old mislabeled copy of Clover material and is not the real Evergreen Lesson9.
+Ignore the separate repository `branzfamily01/evergreen-lesson9`. It is an old mislabeled copy of Clover material and is **not** the real Evergreen Lesson9.
 
-The current valid reference materials are:
+The current valid materials are:
 
 - `materials/clover/lesson9/`
 - `materials/evergreen/lesson8/`
+- `materials/evergreen/lesson9/` ← **the real Evergreen Lesson9; first lesson newly authored on Engine v1**
 
 ## Why this audit exists
 
-This is an isolated v1 prototype. It has **not** been connected to production My Hub yet, and it has **not** become the official student distribution route.
+This is an isolated v1 prototype. It has **not** been connected to production My Hub yet, and Evergreen Lesson9 has **not** been released through the production yearly Netlify student site.
 
 We want a release-gate review before doing that.
 
@@ -32,6 +33,7 @@ We want a release-gate review before doing that.
 - `localStorage` is work storage; JSON is the Phase 1 portable backup.
 - My Hub module is prepared but intentionally not connected.
 - Student yearly Netlify site contains only explicitly released lessons.
+- Evergreen Lesson9 uses PPT + supplied model answers/translations as the authoritative exercise source. Supplementary modal materials may improve explanations/maps but must not silently change questions or official answers.
 
 Do not reopen these decisions merely for stylistic preference. Reopen them only if you find a concrete correctness, security, maintenance, or classroom-operability problem.
 
@@ -40,10 +42,13 @@ Do not reopen these decisions merely for stylistic preference. Reopen them only 
 The following were found and fixed before this audit. **Verify the fixes and try to break them; do not merely recommend them again.**
 
 1. Evergreen Lesson8 question-stage audio leakage was fixed: EX1 now speaks a `blank` version and EX2 speaks the prompt, not the completed answer.
-2. Clover Lesson9 now has CI source-parity verification against the pinned source commit. `tools/verify_clover_source_parity.py` requires exact equality after removing only `id`/`format` and mapping `audioQ/audioA` back to the legacy audio field names.
+2. Clover Lesson9 now has CI source-parity verification against the pinned source commit. `tools/verify_clover_source_parity.py` requires exact equality after removing only structural migration fields.
 3. Progress/resume now stores explicit `resumeQuestionKey` and `completed` state. Engine `jumpTo(data.length)` is valid so a fully completed lesson can resume at END. My Hub candidate distinguishes `前回 ... / 次回 ...` and completion.
 4. Student export now uses an allowlist not only for files but also for metadata keys. `series`/`lesson` slugs are validated, resolved targets must remain under the output root, and an existing lesson target is cleared before re-export so stale files cannot survive.
 5. Student output scanning rejects teacher file paths/references, `teaching.v1`, and `teacherMode:true`. CI tests unsafe path metadata, stale-file removal, metadata-key allowlisting, individual lesson exports, and a multi-lesson yearly build.
+6. Evergreen Lesson9 has `tools/verify_evergreen9_source_parity.py`, which locks all 23 question keys/order, problem text, model answers, completed sentences, supplied Japanese translations, choice options, and Exercise 1 source underlines.
+7. Evergreen Lesson9 is currently `status: review`. `build_year_site.py` rejects non-`ready` lessons before touching output. `--allow-review` exists only as a disposable-test escape hatch and CI verifies the production gate rejects Lesson9 while it is under review.
+8. Evergreen Lesson9 includes a question-specific visual layer and an always-available `🗺 地図` reference drawer; `🧭 今ここ` is intentionally hidden until the answer has been revealed.
 
 Current CI has passed these checks. Your job is to find what these checks still miss.
 
@@ -62,7 +67,76 @@ Also audit `tools/verify_clover_source_parity.py` itself: try to find any normal
 
 Check whether the section→format mapping is semantically sound.
 
-### 2. Stage/audio leakage
+### 2. Evergreen Lesson9 — first greenfield Engine-v1 lesson
+
+This is especially important because it tests whether the architecture works for a **new lesson**, not merely a migrated Clover lesson.
+
+Audit:
+
+- `materials/evergreen/lesson9/lesson-data.js`
+- `materials/evergreen/lesson9/lesson-references.js`
+- `materials/evergreen/lesson9/lesson9-enhance.js`
+- `materials/evergreen/lesson9/lesson9.css`
+- teacher `index.html`
+- `student-index.html`
+- `student-export.json`
+- `source-lock.json`
+- `tools/verify_evergreen9_source_parity.py`
+
+Authoritative content policy:
+
+- PowerPoint `10_Evergreen English Grammar 47_Lesson9(1).pptx` is the basic lesson source.
+- The teacher supplied the model answers and Japanese translations separately; they are authoritative too.
+- Supplementary modal documents are explanation/reference material only.
+
+Verify all 23 questions and especially check:
+
+- exact problem/answer/translation preservation
+- Exercise 1 underline preservation
+- `used to` vs `would (often)` explanation
+- `need` as modal vs lexical verb
+- `needn’t` vs prohibition
+- `wouldn’t` as past refusal
+- `Shall I` vs `Shall we`
+- `Will you` vs `Would you`
+- `be supposed to`
+- `dare not + V`
+- `will often` current habit/tendency
+- TRY model-answer alternatives such as `will[am going to]`
+
+Try to identify any place where a supplementary explanation has been promoted into an unsupported "official answer" or where model knowledge has accidentally overwritten the authoritative source.
+
+### 3. Evergreen Lesson9 visual/reference layer
+
+The teacher explicitly requested diagrams and a zoomed-out map that students can consult while learning.
+
+Audit the real browser behavior of:
+
+- `🗺 地図` button
+- concept-map opening/closing
+- all reference tabs
+- `🧭 今ここ` breadcrumb
+- per-question diagrams at the reason stage
+- source-underlined expressions
+- desktop projector layout
+- 320 / 375 / 768 / 1440 widths
+- keyboard behavior while the map dialog is open
+- focus return on close
+- Escape behavior
+- interaction with the existing question drawer
+
+Look specifically for:
+
+- answer leakage before reveal
+- modal/map overlays behind or above the wrong layer
+- clipping on 16:9 projectors
+- excessive text density
+- buttons becoming unreachable on small screens
+- visuals that are semantically misleading even if visually attractive
+
+Do not recommend removing the visual system merely to simplify code. Identify concrete problems.
+
+### 4. Stage/audio leakage
 
 Read `_engine/v1/audio.js` and `_engine/v1/engine.js`.
 
@@ -83,7 +157,13 @@ stage >= 1 -> audioA / completed
 
 Check the API boundary, not only current callers.
 
-### 3. Engine behavior
+For Evergreen Lesson9, pay special attention to:
+
+- blank / choice questions: `audioQ` must not contain the answer
+- order / write questions: no stage-0 English answer audio
+- translation questions: source English audio is acceptable because the English sentence itself is the question
+
+### 5. Engine behavior
 
 Test/reason through:
 
@@ -98,13 +178,13 @@ Test/reason through:
 - output reveal
 - audio
 - mobile layout
-- question formats
+- all five question formats
 - end screen
 - `jumpTo(0)`, `jumpTo(last)`, and `jumpTo(data.length)`
 
 Look for off-by-one, focus, keyboard, state, DOM, accessibility, or rendering bugs.
 
-### 4. Teacher layer
+### 6. Teacher layer
 
 Audit `_teacher/v1/teacher.js`.
 
@@ -131,7 +211,7 @@ Check:
 
 Identify any issue likely to break a real lesson.
 
-### 5. Privacy boundary
+### 7. Privacy boundary
 
 Verify that no teacher data is shipped in the student path.
 
@@ -139,6 +219,8 @@ Audit:
 
 - `materials/clover/lesson9/student-index.html`
 - `materials/evergreen/lesson8/student-export.json`
+- `materials/evergreen/lesson9/student-index.html`
+- `materials/evergreen/lesson9/student-export.json`
 - `tools/student-export/export_lesson.py`
 - `tools/student-export/build_year_site.py`
 
@@ -155,7 +237,7 @@ Try to bypass:
 
 Look for symlinks, unusual filenames, crafted metadata/string content, path traversal, accidental copying, stale output, teacher metadata leakage, or future footguns.
 
-### 6. Student yearly build
+### 8. Student yearly build / release gate
 
 Audit whether a yearly Netlify build can safely contain several released lessons and share Engine v1.
 
@@ -163,9 +245,11 @@ Check URL/path behavior after export, especially absolute vs relative references
 
 Check duplicate lesson arguments, duplicate target paths, mixed v1/legacy lessons, release-manifest correctness, and rebuild behavior.
 
+For the new release gate, try to bypass the rule that `status != ready` must not enter a production yearly build. Verify that failure happens before output mutation and that `--allow-review` cannot be triggered accidentally by normal production usage.
+
 Also note that `robots.txt` is only indexing suppression, not access control.
 
-### 7. Evergreen Lesson8
+### 9. Evergreen Lesson8
 
 Confirm that the copied legacy implementation includes the fixed question-audio behavior:
 
@@ -174,7 +258,7 @@ Confirm that the copied legacy implementation includes the fixed question-audio 
 
 Do **not** recommend an Engine v1 migration merely for consistency. Recommend it only if the present legacy arrangement has an actual operational cost worth paying.
 
-### 8. My Hub module
+### 10. My Hub module
 
 Audit `my-hub-module/teaching-panel.js`, but remember it is not installed yet.
 
@@ -195,15 +279,16 @@ Pay special attention to:
 - DOM/CSS collisions
 - production integration risk
 
-### 9. Validators and CI
+### 11. Validators and CI
 
 Audit:
 
 - `tools/validate.py`
 - `tools/verify_clover_source_parity.py`
+- `tools/verify_evergreen9_source_parity.py`
 - `.github/workflows/validate.yml`
 
-The current CI already tests source parity, syntax/invariants, student export, stale-file cleanup, unsafe target paths, metadata allowlisting, and multi-lesson yearly build.
+The current CI already tests source parity, syntax/invariants, student export, stale-file cleanup, unsafe target paths, metadata allowlisting, release gating, and a multi-lesson yearly build.
 
 Tell us what important **behavioral or security invariant is still not tested**, and distinguish:
 
@@ -219,12 +304,13 @@ Start with:
 
 Then:
 
-1. **Blockers before My Hub connection**
-2. **Blockers before Netlify/student release**
-3. **Bugs or risks that can wait**
-4. **What is already correct and should not be redesigned**
-5. **Exact file/function/line-level fixes**
-6. **Tests to add**
+1. **Blockers before using Evergreen Lesson9 in a real teacher-led class**
+2. **Blockers before My Hub connection**
+3. **Blockers before Netlify/student release**
+4. **Bugs or risks that can wait**
+5. **What is already correct and should not be redesigned**
+6. **Exact file/function/line-level fixes**
+7. **Tests to add**
 
 For every blocker, state a concrete reproduction/failure scenario. Do not label a theoretical preference as a blocker.
 
