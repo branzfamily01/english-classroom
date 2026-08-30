@@ -32,7 +32,8 @@ function readStoreResult(){
 function setStoreBlocked(message=''){
   const stateEl=document.getElementById('teacherStoreState');
   if(stateEl){stateEl.textContent=message;stateEl.hidden=!message;}
-  document.querySelectorAll('[data-log-type],#teacherEndBtn').forEach(b=>{b.disabled=!!message;});
+  const noClass=!params().className;
+  document.querySelectorAll('[data-log-type],#teacherEndBtn').forEach(b=>{b.disabled=!!message||noClass;});
 }
 function readStore(){
   const result=readStoreResult();
@@ -109,7 +110,7 @@ function showPast(){
 }
 function updateBackupLabel(){
   const el=document.getElementById('teacherBackupState');if(!el)return;const result=readStoreResult();if(!result.ok){el.textContent='保存データ要復元';el.dataset.state='warn';setStoreBlocked(result.error);return;}
-  const last=result.store.lastBackupAt;if(!last){el.textContent='バックアップ未作成';el.dataset.state='warn';return;}const days=Math.floor((Date.now()-new Date(last).getTime())/86400000);el.textContent=days<=0?'最終バックアップ：今日':`最終バックアップ：${days}日前`;el.dataset.state=days>=7?'warn':'ok';
+  setStoreBlocked('');const last=result.store.lastBackupAt;if(!last){el.textContent='バックアップ未作成';el.dataset.state='warn';return;}const days=Math.floor((Date.now()-new Date(last).getTime())/86400000);el.textContent=days<=0?'最終バックアップ：今日':`最終バックアップ：${days}日前`;el.dataset.state=days>=7?'warn':'ok';
 }
 
 function injectStyles(){
