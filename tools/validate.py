@@ -26,6 +26,16 @@ def parse_lesson_data(path: str) -> list[dict]:
     return json.loads(m.group(1))
 
 
+def answer_phrase_leaks(answer: object, audio_q: object) -> bool:
+    phrase = str(answer or "").strip().lower()
+    text = str(audio_q or "").lower()
+    phrase = re.sub(r"^[①②③④⑤⑥⑦⑧⑨⑩]\s*", "", phrase)
+    if not phrase or not text:
+        return False
+    pattern = rf"(?<![a-z0-9]){re.escape(phrase)}(?![a-z0-9])"
+    return re.search(pattern, text) is not None
+
+
 errors: list[str] = []
 
 
@@ -35,13 +45,54 @@ def check(condition: bool, message: str) -> None:
 
 
 registry = read_json("registry/lessons.json")
-for lesson in registry.get("lessons", []):
+lessons = registry.get("lessons", [])
+for lesson in lessons:
     lesson_id = str(lesson.get("id", ""))
     path = str(lesson.get("path", ""))
     check(bool(lesson_id), "registry lesson missing id")
     check(not re.search(r"20\d{2}", lesson_id), f"year leaked into permanent id: {lesson_id}")
     check(not re.search(r"(^|/)20\d{2}(/|$)", path), f"year leaked into lesson path: {path}")
     check((ROOT / path).is_dir(), f"registry path missing: {path}")
+
+    if lesson.get("engine") != "v1":
+        continue
+
+    base = path.rstrip("/")
+    meta_path = f"{base}/lesson-meta.json"
+    data_path = f"{base}/lesson-data.js"
+    student_path = f"{base}/student-index.html"
+    check((ROOT / meta_path).is_file(), f"v1 lesson missing metadata: {lesson_id}")
+    check((ROOT / data_path).is_file(), f"v1 lesson missing data: {lesson_id}")
+    if not (ROOT / meta_path).is_file() or not (ROOT / data_path).is_file():
+        continue
+
+    meta = read_json(meta_path)
+    data = parse_lesson_data(data_path)
+    check(meta.get("id") == lesson_id, f"registry/meta id mismatch: {lesson_id}")
+    check(bool(data), f"v1 lesson-data.js is not parseable: {lesson_id}")
+    if not data:
+        continue
+    check(len(data) == meta.get("questionCount"), f"questionCount mismatch: {lesson_id}")
+    check({q.get("format") for q in data} <= FORMATS, f"unsupported format found: {lesson_id}")
+
+    for q in data:
+        key = q.get("key")
+        fmt = q.get("format")
+        check(str(q.get("id", "")).startswith(f"{lesson_id}."), f"bad permanent question id: {lesson_id} / {key}")
+        check(fmt in FORMATS, f"unsupported format: {lesson_id} / {key}")
+        check("questionAudio" not in q and "answerAudio" not in q, f"old audio field leaked: {lesson_id} / {key}")
+        check("audioQ" in q and "audioA" in q, f"audio fields missing: {lesson_id} / {key}")
+        if fmt in {"blank", "choice"}:
+            check(not answer_phrase_leaks(q.get("answer"), q.get("audioQ")), f"stage-0 audio leaks answer: {lesson_id} / {key}")
+        if fmt in {"order", "write"}:
+            check(q.get("audioQ") is None, f"stage-0 English answer audio must be absent: {lesson_id} / {key}")
+
+    if lesson.get("studentExport"):
+        check((ROOT / student_path).is_file(), f"student entry missing: {lesson_id}")
+        if (ROOT / student_path).is_file():
+            student = read(student_path).lower()
+            check("_teacher/" not in student and "teacher.js" not in student, f"student entry references teacher code: {lesson_id}")
+            check('"teachermode": false' in student, f"student entry must explicitly disable teacher mode: {lesson_id}")
 
 audio = read("_engine/v1/audio.js")
 check("window.LessonAudio = Object.freeze({ speak });" in audio,
@@ -76,10 +127,20 @@ check(all(x in teacher for x in ("misconception","question","explanation","addit
 check("/(さん|くん|君)/" in teacher, "accidental-name warning missing")
 check("resumeQuestionKey" in teacher and "completed" in teacher,
       "progress must store explicit next-question/completion state")
+check("resumeQuestionId" in teacher and "findIndex(q=>q.id===saved.resumeQuestionId)" in teacher,
+      "resume must prefer permanent question id over slide index")
 check("s.slideIndex < 0" in teacher,
       "progress save must reject cover/guide before a question starts")
-check("deleteLog" in teacher and "data-delete-log" in teacher,
-      "teacher logs must be deletable")
+check("readStoreResult" in teacher and "return {ok:false" in teacher,
+      "teacher store must fail closed on corrupt/unknown data")
+check("schoolYearNow" in teacher and "d.getMonth()<3" in teacher,
+      "teacher default school year must start in April")
+check("requireClass" in teacher and "const p=requireClass()" in teacher,
+      "class-less teaching logs/progress must be blocked")
+check("rec.deletedAt=at" in teacher and "!x.deletedAt" in teacher,
+      "teacher log deletion must use tombstones")
+check("store.logs=store.logs.filter(x=>x.recordId!==id)" not in teacher,
+      "physical teaching-log deletion returned")
 check("is-minimized" in teacher and "enableDrag" in teacher,
       "teacher panel must be minimizable and movable")
 check("Teacher Guide" in teacher,
@@ -90,25 +151,16 @@ check("次回：${saved.resumeQuestionKey}" in myhub,
       "My Hub candidate must display explicit next question")
 check("完了画面を開く" in myhub,
       "My Hub candidate must distinguish completed lessons")
-
-clover_meta = read_json("materials/clover/lesson9/lesson-meta.json")
-clover_data = parse_lesson_data("materials/clover/lesson9/lesson-data.js")
-check(bool(clover_data), "Clover lesson-data.js is not parseable")
-if clover_data:
-    check(len(clover_data) == clover_meta.get("questionCount") == 40, "Clover must contain 40 questions")
-    check({q.get("format") for q in clover_data} <= FORMATS, "unsupported Clover format found")
-    for q in clover_data:
-        check(str(q.get("id", "")).startswith("clover.lesson9."),
-              f"bad permanent question id: {q.get('id')}")
-        check("questionAudio" not in q and "answerAudio" not in q,
-              f"old audio field leaked: {q.get('key')}")
-        check("audioQ" in q and "audioA" in q, f"audio fields missing: {q.get('key')}")
-
-clover_student = read("materials/clover/lesson9/student-index.html").lower()
-check("_teacher/" not in clover_student and "teacher.js" not in clover_student,
-      "Clover student entry references teacher code")
-check('"teachermode": false' in clover_student,
-      "Clover student entry must explicitly disable teacher mode")
+check("readStoreResult" in myhub and "return {ok:false" in myhub,
+      "My Hub teaching store must fail closed")
+check("mergeStores" in myhub and "JSONから復元（統合）" in myhub,
+      "My Hub restore must default to merge")
+check("!x.deletedAt" in myhub,
+      "My Hub must hide tombstoned logs")
+check("schoolYearNow" in myhub and "d.getMonth()<3" in myhub,
+      "My Hub default school year must start in April")
+check("localStorage.setItem(CFG.storeKey,JSON.stringify(obj))" not in myhub,
+      "unsafe full-replace restore returned")
 
 legacy_policy = read_json("materials/evergreen/lesson8/student-export.json")
 check(legacy_policy.get("policy") == "allowlist", "Evergreen legacy export must be allowlist")
@@ -125,30 +177,18 @@ check("audioButton(q.en.replace(/\\(\\s*\\)/g, 'blank'))" in eg8,
       "Evergreen EX1 blank audio fix missing")
 check("${audioButton(q.prompt)}" in eg8, "Evergreen EX2 prompt audio fix missing")
 
-# Evergreen Lesson 9: first new lesson created against Engine v1.
+# Evergreen Lesson 9 keeps extra lesson-specific quality gates on top of registry-driven v1 checks.
 eg9_meta = read_json("materials/evergreen/lesson9/lesson-meta.json")
 eg9_data = parse_lesson_data("materials/evergreen/lesson9/lesson-data.js")
 check(len(eg9_data) == eg9_meta.get("questionCount") == 23, "Evergreen Lesson9 must contain 23 questions")
 check({q.get("format") for q in eg9_data} == FORMATS, "Evergreen Lesson9 must exercise all five frozen formats")
 for q in eg9_data:
     key = q.get("key")
-    check(str(q.get("id", "")).startswith("evergreen.lesson9."), f"bad Evergreen L9 id: {key}")
-    check(q.get("format") in FORMATS, f"unsupported Evergreen L9 format: {key}")
     check(bool(q.get("focus")), f"Evergreen L9 missing focus: {key}")
     check(isinstance(q.get("mapPath"), list) and q.get("mapPath"), f"Evergreen L9 missing mapPath: {key}")
     check(isinstance(q.get("visual"), dict) and q.get("visual", {}).get("kind"), f"Evergreen L9 missing visual: {key}")
-    if q.get("format") in {"blank", "choice"}:
-        answer = str(q.get("answer", "")).strip().lower()
-        audio_q = str(q.get("audioQ", "")).lower()
-        check(not answer or answer not in audio_q, f"Evergreen L9 stage-0 audio leaks answer: {key}")
-    if q.get("format") in {"order", "write"}:
-        check(q.get("audioQ") is None, f"Evergreen L9 {q.get('format')} must not expose English answer audio: {key}")
 
 eg9_student = read("materials/evergreen/lesson9/student-index.html").lower()
-check("_teacher/" not in eg9_student and "teacher.js" not in eg9_student,
-      "Evergreen L9 student entry references teacher code")
-check('"teachermode": false' in eg9_student,
-      "Evergreen L9 student entry must explicitly disable teacher mode")
 for needed in ("lesson-references.js","lesson9-learning.js","lesson9-enhance.js","lesson9.css"):
     check(needed in eg9_student, f"Evergreen L9 student entry missing asset: {needed}")
 eg9_policy = read_json("materials/evergreen/lesson9/student-export.json")
