@@ -84,8 +84,20 @@ function saveProgress(){
   let resumeSlideIndex=s.stage==='output'?s.slideIndex+1:s.slideIndex;
   const completed=total>0&&resumeSlideIndex>=total;if(completed)resumeSlideIndex=total;
   const resumeQuestion=window.LessonEngine?.getQuestionAt?.(resumeSlideIndex)||null;const lastQuestion=completed?window.LessonEngine?.getQuestionAt?.(total-1):null;
-  store.progress[key]={schoolYear:p.schoolYear,className:p.className,lessonId:s.lessonId,questionId:s.questionId||lastQuestion?.id||'',questionKey:s.questionKey||lastQuestion?.key||'',slideIndex:s.slideIndex,step:s.step,stage:s.stage,resumeSlideIndex,resumeQuestionId:resumeQuestion?.id||'',resumeQuestionKey:completed?'END':(resumeQuestion?.key||s.questionKey||''),completed,savedAt:nowIso()};
+  const resumeStep=s.stage==='output'?0:Math.max(0,Number(s.step||0));
+  const resumeFinalStep=s.slideIndex===total?Math.max(0,Number(s.finalStep||0)):0;
+  store.progress[key]={schoolYear:p.schoolYear,className:p.className,lessonId:s.lessonId,questionId:s.questionId||lastQuestion?.id||'',questionKey:s.questionKey||lastQuestion?.key||'',slideIndex:s.slideIndex,step:s.step,stage:s.stage,finalStep:s.finalStep||0,resumeSlideIndex,resumeQuestionId:resumeQuestion?.id||'',resumeQuestionKey:completed?'END':(resumeQuestion?.key||s.questionKey||''),resumeStep,resumeFinalStep,completed,savedAt:nowIso()};
   return writeStore(store);
+}
+function autoSaveProgress(){
+  const p=params(),s=state();
+  if(!p.className||!s.lessonId||s.slideIndex<0)return;
+  const storeResult=readStoreResult();
+  if(!storeResult.ok){setStoreBlocked(storeResult.error);return;}
+  const signature=[p.schoolYear,p.className,s.lessonId,s.slideIndex,s.step,s.stage,s.finalStep||0].join('|');
+  if(signature===autoSaveProgress._last)return;
+  autoSaveProgress._last=signature;
+  saveProgress();
 }
 function downloadBackup(){
   const store=readStore();if(!store)return false;store.lastBackupAt=nowIso();if(!writeStore(store))return false;
@@ -131,7 +143,7 @@ function injectUI(){
   const dock=document.createElement('aside');dock.id='teacherDock';dock.className='teacher-dock';dock.innerHTML=`<div class="teacher-dock-card"><div class="teacher-dock-head" id="teacherDockHandle"><div class="teacher-head-main"><span>TEACHER ${escapeHtml(hasClass?`· ${p.className}`:'· クラス未指定')}</span><span id="teacherBackupState"></span></div><div class="teacher-head-tools"><button id="teacherGuideBtn" class="teacher-head-btn" type="button" title="教師用の使い方">ⓘ</button><button id="teacherMinBtn" class="teacher-head-btn" type="button" title="最小化">−</button></div></div><div class="teacher-dock-body"><div class="teacher-types">${TYPES.map(([type,icon,label])=>`<button class="teacher-type" type="button" data-log-type="${type}" title="${label}" ${hasClass?'':'disabled'}>${icon} ${label}</button>`).join('')}</div><small id="teacherClassState" class="teacher-class-state" ${hasClass?'hidden':''}>ログと進度を保存するには、My Hubからクラスを選んで開いてください。</small><small id="teacherStoreState" class="teacher-store-state" hidden></small><div class="teacher-quick"><input id="teacherQuickNote" hidden><button id="teacherQuickSave" class="teacher-action" type="button" hidden>保存</button><button id="teacherQuickSkip" class="teacher-action" type="button" hidden>閉じる</button></div><small id="teacherQuickHint" class="teacher-hint" hidden>個人を特定できる情報は入力しない。</small><div class="teacher-footer"><button id="teacherPastBtn" class="teacher-action" type="button">🧠 過去記録 0</button><button id="teacherEndBtn" class="teacher-action primary" type="button" ${hasClass?'':'disabled'}>授業終了</button></div></div></div>`;document.body.appendChild(dock);
   if(Number.isFinite(ui.x)&&Number.isFinite(ui.y)){dock.style.left=`${ui.x}px`;dock.style.top=`${ui.y}px`;dock.style.right='auto';}
   const past=document.createElement('div');past.id='teacherPastModal';past.className='teacher-modal';past.hidden=true;past.innerHTML=`<section class="teacher-modal-card" role="dialog" aria-modal="true" aria-label="過去の授業記録"><div class="teacher-modal-head"><strong>この問題の過去記録</strong><button id="teacherPastClose" class="teacher-delete" type="button">閉じる</button></div><div id="teacherPastBody"></div></section>`;document.body.appendChild(past);
-  const guide=document.createElement('div');guide.id='teacherGuideModal';guide.className='teacher-modal';guide.hidden=true;guide.innerHTML=`<section class="teacher-modal-card" role="dialog" aria-modal="true" aria-label="教師用の使い方"><div class="teacher-modal-head"><strong>Teacher Guide</strong><button id="teacherGuideClose" class="teacher-delete" type="button">閉じる</button></div><div class="teacher-guide-list"><article><b>画面を進む / 戻る</b><p><kbd>→</kbd> は次の画面、<kbd>←</kbd> は直前の画面。問題・Hint・解答・解説を1画面ずつ移動します。</p></article><article><b>画面を広く使う</b><p>下の操作バーは「−」で小さくできます。Teacher panelも右上の「−」で最小化。見出し部分をドラッグすると移動できます。</p></article><article><b>授業記録</b><p>My Hubからクラス指定で開いたときだけ、誤答・質問・説明成功・追記・改善を記録できます。削除した記録は復元事故を防ぐため履歴上はtombstoneとして残します。個人名は書きません。</p></article><article><b>地図</b><p>「🗺 地図」で助動詞全体の中の現在位置を確認できます。</p></article><article><b>授業終了</b><p>進度を保存し、Phase 1の持ち運び用JSONバックアップを出力します。</p></article></div></section>`;document.body.appendChild(guide);
+  const guide=document.createElement('div');guide.id='teacherGuideModal';guide.className='teacher-modal';guide.hidden=true;guide.innerHTML=`<section class="teacher-modal-card" role="dialog" aria-modal="true" aria-label="教師用の使い方"><div class="teacher-modal-head"><strong>Teacher Guide</strong><button id="teacherGuideClose" class="teacher-delete" type="button">閉じる</button></div><div class="teacher-guide-list"><article><b>画面を進む / 戻る</b><p><kbd>→</kbd> は次の画面、<kbd>←</kbd> は直前の画面。問題・Hint・解答・解説を1画面ずつ移動します。</p></article><article><b>進度の自動保存</b><p>My Hubからクラス指定で開くと、画面を移動するたびにそのクラスの進度を自動保存します。HintやCheckなど問題内の位置も保持し、Say itまで終えた問題は次の問題から再開します。</p></article><article><b>画面を広く使う</b><p>下の操作バーは「−」で小さくできます。Teacher panelも右上の「−」で最小化。見出し部分をドラッグすると移動できます。</p></article><article><b>授業記録</b><p>My Hubからクラス指定で開いたときだけ、誤答・質問・説明成功・追記・改善を記録できます。削除した記録は復元事故を防ぐため履歴上はtombstoneとして残します。個人名は書きません。</p></article><article><b>地図</b><p>「🗺 地図」で助動詞全体の中の現在位置を確認できます。</p></article><article><b>授業終了</b><p>現在位置を再保存し、Phase 1の持ち運び用JSONバックアップを出力します。</p></article></div></section>`;document.body.appendChild(guide);
 
   dock.addEventListener('click',e=>{const b=e.target.closest('[data-log-type]');if(b&&!b.disabled)openQuickNote(b.dataset.logType);});
   document.getElementById('teacherQuickSave').addEventListener('click',saveQuickNote);document.getElementById('teacherQuickSkip').addEventListener('click',closeQuick);document.getElementById('teacherQuickNote').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveQuickNote();}if(e.key==='Escape')closeQuick();});
@@ -139,6 +151,19 @@ function injectUI(){
   document.getElementById('teacherGuideBtn').addEventListener('click',showGuide);document.getElementById('teacherGuideClose').addEventListener('click',()=>{guide.hidden=true;});guide.addEventListener('click',e=>{if(e.target===guide)guide.hidden=true;});
   document.getElementById('teacherMinBtn').addEventListener('click',()=>setMinimized(!dock.classList.contains('is-minimized')));enableDrag(dock,document.getElementById('teacherDockHandle'));setMinimized(ui.minimized!==false);updateBackupLabel();renderPastCount();
 }
-function resumeIfRequested(){ const url=new URL(location.href);if(url.searchParams.get('resume')!=='1')return;const p=requireClass();if(!p)return;const s=state(),store=readStore();if(!store)return;const key=progressKey(s.lessonId,p.schoolYear,p.className),saved=store.progress[key];if(!saved)return;let resumeIndex=saved.resumeSlideIndex;if(saved.resumeQuestionId){const found=(window.LESSON_DATA||[]).findIndex(q=>q.id===saved.resumeQuestionId);if(found>=0)resumeIndex=found;}if(!Number.isInteger(resumeIndex))return;const ok=window.LessonEngine?.jumpTo?.(resumeIndex);if(ok){const message=saved.completed?'このLessonは前回までに完了しています':`続き：${saved.resumeQuestionKey||saved.questionKey||'保存位置'}から`;setTimeout(()=>toast(message),50);}}
-window.addEventListener('lesson:render',renderPastCount);injectStyles();injectUI();resumeIfRequested();
+function resumeIfRequested(){
+  const url=new URL(location.href);if(url.searchParams.get('resume')!=='1')return;
+  const p=requireClass();if(!p)return;const s=state(),store=readStore();if(!store)return;const key=progressKey(s.lessonId,p.schoolYear,p.className),saved=store.progress[key];if(!saved)return;
+  let resumeIndex=saved.resumeSlideIndex;
+  if(saved.resumeQuestionId){const found=(window.LESSON_DATA||[]).findIndex(q=>q.id===saved.resumeQuestionId);if(found>=0)resumeIndex=found;}
+  if(!Number.isInteger(resumeIndex))return;
+  const ok=window.LessonEngine?.jumpTo?.(resumeIndex);
+  if(ok){
+    const next=document.getElementById('nextBtn');const total=Number(window.LESSON_META?.questionCount||0);
+    if(resumeIndex>=0&&resumeIndex<total){for(let i=0;i<Math.max(0,Number(saved.resumeStep||0));i++)next?.click();}
+    else if(resumeIndex===total){for(let i=0;i<Math.max(0,Number(saved.resumeFinalStep||0));i++)next?.click();}
+    const message=saved.completed?'このLessonは前回までに完了しています':`続き：${saved.resumeQuestionKey||saved.questionKey||'保存位置'}から`;setTimeout(()=>toast(message),50);
+  }
+}
+window.addEventListener('lesson:render',()=>{renderPastCount();autoSaveProgress();});injectStyles();injectUI();resumeIfRequested();
 })();
