@@ -29,6 +29,8 @@ jobs:
           python tools/validate.py
       - name: Verify locked Clover source parity
         run: python tools/verify_clover_source_parity.py
+      - name: Verify Evergreen Lesson9 authoritative source parity
+        run: python tools/verify_evergreen9_source_parity.py
       - name: Test allowlist lesson exports
         run: |
           rm -rf /tmp/student-export
