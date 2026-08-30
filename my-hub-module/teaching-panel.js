@@ -7,19 +7,28 @@ const CFG = Object.freeze({
   prefsKey: 'myHub.teaching.v1'
 });
 
+function schoolYearNow(d=new Date()){ return String(d.getMonth()<3 ? d.getFullYear()-1 : d.getFullYear()); }
 function blankStore(){ return {version:1,logs:[],progress:{},lastBackupAt:null}; }
+function validStore(v){ return !!(v && v.version===1 && Array.isArray(v.logs) && v.progress && typeof v.progress==='object' && !Array.isArray(v.progress)); }
 function readJson(key, fallback){
   try { return JSON.parse(localStorage.getItem(key) || 'null') || fallback; }
   catch (_) { return fallback; }
 }
-function readStore(){
-  const v=readJson(CFG.storeKey,blankStore());
-  return v && v.version===1 ? v : blankStore();
+function readStoreResult(){
+  const raw=localStorage.getItem(CFG.storeKey);
+  if(raw===null) return {ok:true,store:blankStore(),source:'empty'};
+  try{
+    const v=JSON.parse(raw);
+    if(!validStore(v)) return {ok:false,error:'授業保存データの形式が未対応です。JSONバックアップから復元するまで上書きしません。'};
+    return {ok:true,store:v,source:'stored'};
+  }catch(_){
+    return {ok:false,error:'授業保存データを読み取れません。JSONバックアップから復元するまで上書きしません。'};
+  }
 }
 function prefs(){
   const v=readJson(CFG.prefsKey,{});
   return {
-    year:String(v.year || new Date().getFullYear()),
+    year:String(v.year || schoolYearNow()),
     classes:Array.isArray(v.classes)?v.classes:[],
     currentClass:String(v.currentClass || '')
   };
@@ -47,10 +56,16 @@ function teacherUrl(lesson,p){
   url.searchParams.set('resume','1');
   return url.toString();
 }
-function downloadBackup(){
-  const store=readStore();
-  store.lastBackupAt=new Date().toISOString();
+function writeStore(store){
+  if(!validStore(store)) throw new Error('保存形式が不正です');
   localStorage.setItem(CFG.storeKey,JSON.stringify(store));
+}
+function downloadBackup(){
+  const result=readStoreResult();
+  if(!result.ok){alert(result.error);return false;}
+  const store=result.store;
+  store.lastBackupAt=new Date().toISOString();
+  try{writeStore(store);}catch(err){alert(`バックアップ前の保存に失敗しました：${err.message}`);return false;}
   const blob=new Blob([JSON.stringify(store,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -58,10 +73,29 @@ function downloadBackup(){
   const date=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
   a.href=url;a.download=`teaching-backup-${date}.json`;
   document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),500);
+  setTimeout(()=>URL.revokeObjectURL(url),500);return true;
 }
 function validBackup(v){
-  return v && v.version===1 && Array.isArray(v.logs) && v.progress && typeof v.progress==='object';
+  return validStore(v) && v.logs.every(x=>x && typeof x==='object' && typeof x.recordId==='string' && x.recordId);
+}
+function stamp(x){
+  return Math.max(0,...['createdAt','updatedAt','deletedAt','savedAt'].map(k=>{const n=Date.parse(x?.[k]||'');return Number.isFinite(n)?n:0;}));
+}
+function latestIso(a,b){ const aa=Date.parse(a||''),bb=Date.parse(b||'');if(!Number.isFinite(aa))return b||null;if(!Number.isFinite(bb))return a||null;return aa>=bb?a:b; }
+function mergeStores(current,incoming){
+  const logs=new Map();
+  for(const rec of current.logs||[]) if(rec?.recordId) logs.set(rec.recordId,{...rec});
+  for(const rec of incoming.logs||[]){
+    if(!rec?.recordId) continue;
+    const prev=logs.get(rec.recordId);
+    if(!prev || stamp(rec)>stamp(prev)) logs.set(rec.recordId,{...rec});
+  }
+  const progress={...(current.progress||{})};
+  for(const [key,value] of Object.entries(incoming.progress||{})){
+    const prev=progress[key];
+    if(!prev || stamp(value)>stamp(prev)) progress[key]={...value};
+  }
+  return {version:1,logs:[...logs.values()],progress,lastBackupAt:latestIso(current.lastBackupAt,incoming.lastBackupAt)};
 }
 
 let lessons=[];
@@ -77,10 +111,10 @@ function injectCss(){
   .teachhub-head{position:sticky;top:0;z-index:3;display:flex;justify-content:space-between;align-items:center;gap:12px;background:#172033;color:#fff;padding:14px 18px}.teachhub-head button{border:1px solid #ffffff40;background:#ffffff14;color:#fff;border-radius:10px;padding:7px 10px;font-weight:900}
   .teachhub-body{padding:16px}.teachhub-settings{display:grid;grid-template-columns:120px 1fr 170px;gap:9px;align-items:end;background:#fff;border:1px solid #ded7cc;border-radius:16px;padding:12px}
   .teachhub-settings label{font-size:12px;font-weight:850}.teachhub-settings input,.teachhub-settings select{width:100%;margin-top:5px;padding:9px;border:1px solid #cfc8bd;border-radius:9px;background:#fff}
-  .teachhub-status{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:14px 0;font-size:13px;color:#687489}.teachhub-warn{color:#a45d17;font-weight:900}
+  .teachhub-status{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:14px 0;font-size:13px;color:#687489}.teachhub-warn{color:#a45d17;font-weight:900}.teachhub-blocked{margin:12px 0;padding:11px 13px;border-radius:12px;background:#fff0ed;border:1px solid #e7bbb4;color:#8b342d;font-weight:800;font-size:13px;line-height:1.45}
   .teachhub-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:10px}.teachhub-lesson{background:#fff;border:1px solid #ded7cc;border-radius:15px;padding:14px}.teachhub-lesson h3{margin:0 0 5px}.teachhub-meta{font-size:12px;color:#7a8495;margin-bottom:10px}.teachhub-go{display:inline-block;text-decoration:none;background:#172033;color:#fff;border-radius:999px;padding:9px 13px;font-weight:900}.teachhub-go[aria-disabled="true"]{opacity:.45;pointer-events:none}
   .teachhub-section{margin-top:18px}.teachhub-section h3{margin-bottom:8px}.teachhub-log{padding:8px 0;border-bottom:1px solid #e4ddd3;font-size:13px;line-height:1.45}.teachhub-log small{color:#7a8495}
-  .teachhub-actions{display:flex;gap:8px;flex-wrap:wrap}.teachhub-actions button{border:1px solid #c9c2b8;background:#fff;color:#172033;border-radius:10px;padding:8px 11px;font-weight:850}
+  .teachhub-actions{display:flex;gap:8px;flex-wrap:wrap}.teachhub-actions button{border:1px solid #c9c2b8;background:#fff;color:#172033;border-radius:10px;padding:8px 11px;font-weight:850}.teachhub-actions button:disabled{opacity:.4;cursor:not-allowed}
   @media(max-width:680px){.teachhub-settings{grid-template-columns:1fr}.teachhub-status{align-items:flex-start;flex-direction:column}}
   `;
   document.head.appendChild(s);
@@ -88,31 +122,34 @@ function injectCss(){
 
 function render(){
   const p=prefs();
-  const store=readStore();
+  const storeResult=readStoreResult();
+  const store=storeResult.ok?storeResult.store:blankStore();
+  const blocked=!storeResult.ok;
   const backup=backupLabel(store);
   const classOptions=['<option value="">クラスを選択</option>',...p.classes.map(c=>`<option ${c===p.currentClass?'selected':''}>${esc(c)}</option>`)].join('');
   const lessonCards=lessons.map(l=>{
     const saved=store.progress[progressKey(p.year,p.currentClass,l.id)];
-    let pos='進度記録なし';
-    if(saved?.questionKey){
+    let pos=blocked?'保存データを復元してください':'進度記録なし';
+    if(!blocked&&saved?.questionKey){
       if(saved.completed) pos=`前回：${saved.questionKey}まで完了`;
       else if(saved.resumeQuestionKey && saved.resumeQuestionKey!==saved.questionKey) pos=`前回：${saved.questionKey}まで / 次回：${saved.resumeQuestionKey}`;
       else pos=`次回：${saved.resumeQuestionKey || saved.questionKey}から`;
     }
-    const url=p.currentClass ? teacherUrl(l,p) : '#';
+    const enabled=!!p.currentClass&&!blocked;
+    const url=enabled ? teacherUrl(l,p) : '#';
     const legacyNote=l.engine==='legacy' ? '<br>Legacy教材：自動進度保存は未対応' : '';
     const goLabel=saved?.completed?'完了画面を開く':(saved?'続きから授業':'授業開始');
     return `<article class="teachhub-lesson">
       <h3>${esc(l.title)}</h3>
       <div class="teachhub-meta">${esc(l.series)} · ${esc(l.engine)}<br>${esc(pos)}${legacyNote}</div>
-      <a class="teachhub-go" href="${esc(url)}" target="_blank" rel="noopener" ${p.currentClass?'':'aria-disabled="true"'}>▶ ${goLabel}</a>
+      <a class="teachhub-go" href="${esc(url)}" target="_blank" rel="noopener" ${enabled?'':'aria-disabled="true"'}>▶ ${goLabel}</a>
     </article>`;
   }).join('');
 
   const logs=store.logs
-    .filter(x=>(!p.currentClass||x.className===p.currentClass) && String(x.schoolYear||'')===p.year)
+    .filter(x=>!x.deletedAt && (!p.currentClass||x.className===p.currentClass) && String(x.schoolYear||'')===p.year)
     .sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))).slice(0,8);
-  const recent=logs.length?logs.map(x=>`<div class="teachhub-log"><small>${esc(x.date||'')} · ${esc(x.className||'')} · ${esc(x.lessonId||'')} · ${esc(x.questionKey||'')}</small><br>${esc(x.type||'')}${x.note?` — ${esc(x.note)}`:''}</div>`).join(''):'<p>この条件の授業記録はまだありません。</p>';
+  const recent=blocked?'<p>保存データを復元すると授業記録を表示できます。</p>':(logs.length?logs.map(x=>`<div class="teachhub-log"><small>${esc(x.date||'')} · ${esc(x.className||'')} · ${esc(x.lessonId||'')} · ${esc(x.questionKey||'')}</small><br>${esc(x.type||'')}${x.note?` — ${esc(x.note)}`:''}</div>`).join(''):'<p>この条件の授業記録はまだありません。</p>');
 
   panel.querySelector('.teachhub-body').innerHTML=`
     <div class="teachhub-settings">
@@ -120,10 +157,11 @@ function render(){
       <label>担当クラス（カンマ区切り）<input id="teachhub-classes" value="${esc(p.classes.join(','))}" placeholder="1A,1B,1C,3A,3B"></label>
       <label>現在のクラス<select id="teachhub-class">${classOptions}</select></label>
     </div>
-    <div class="teachhub-status"><span>${p.currentClass?`現在：${esc(p.year)}年度 ${esc(p.currentClass)}`:'クラスを選ぶと「続きから授業」が使えます。'}</span><span class="${backup.warn?'teachhub-warn':''}">${esc(backup.text)}</span></div>
+    ${blocked?`<div class="teachhub-blocked">${esc(storeResult.error)}<br>教材を開いて新しい記録を作る前に、下の「JSONから復元」を使ってください。</div>`:''}
+    <div class="teachhub-status"><span>${p.currentClass?`現在：${esc(p.year)}年度 ${esc(p.currentClass)}`:'クラスを選ぶと「続きから授業」が使えます。'}</span><span class="${backup.warn?'teachhub-warn':''}">${blocked?'バックアップからの復元が必要':esc(backup.text)}</span></div>
     <div class="teachhub-grid">${lessonCards}</div>
     <section class="teachhub-section"><h3>最近の授業記録</h3>${recent}</section>
-    <section class="teachhub-section"><h3>バックアップ</h3><div class="teachhub-actions"><button id="teachhub-backup">JSONを保存</button><button id="teachhub-import">JSONから復元</button><input id="teachhub-file" type="file" accept="application/json,.json" hidden></div></section>
+    <section class="teachhub-section"><h3>バックアップ</h3><div class="teachhub-actions"><button id="teachhub-backup" ${blocked?'disabled':''}>JSONを保存</button><button id="teachhub-import">JSONから復元（統合）</button><input id="teachhub-file" type="file" accept="application/json,.json" hidden></div></section>
   `;
 
   const year=panel.querySelector('#teachhub-year');
@@ -133,25 +171,32 @@ function render(){
     const list=classes.value.split(',').map(x=>x.trim()).filter(Boolean);
     const unique=[...new Set(list)];
     const current=classSelect.value && unique.includes(classSelect.value)?classSelect.value:(unique[0]||'');
-    savePrefs({year:year.value.trim()||String(new Date().getFullYear()),classes:unique,currentClass:current});
+    savePrefs({year:year.value.trim()||schoolYearNow(),classes:unique,currentClass:current});
     render();
   };
   year.addEventListener('change',commitPrefs);
   classes.addEventListener('change',commitPrefs);
   classSelect.addEventListener('change',()=>{
-    savePrefs({year:year.value.trim(),classes:p.classes,currentClass:classSelect.value});
+    savePrefs({year:year.value.trim()||schoolYearNow(),classes:p.classes,currentClass:classSelect.value});
     render();
   });
-  panel.querySelector('#teachhub-backup').addEventListener('click',()=>{downloadBackup();render();});
+  panel.querySelector('#teachhub-backup').addEventListener('click',()=>{if(downloadBackup())render();});
   panel.querySelector('#teachhub-import').addEventListener('click',()=>panel.querySelector('#teachhub-file').click());
   panel.querySelector('#teachhub-file').addEventListener('change',async e=>{
     const file=e.target.files?.[0]; if(!file)return;
     try{
-      const obj=JSON.parse(await file.text());
-      if(!validBackup(obj)) throw new Error('形式が違います');
-      if(!confirm('現在の授業記録・進度を、このJSONバックアップで置き換えますか？'))return;
-      localStorage.setItem(CFG.storeKey,JSON.stringify(obj));render();
+      const incoming=JSON.parse(await file.text());
+      if(!validBackup(incoming)) throw new Error('対応していない、または一部が壊れたバックアップです');
+      const currentResult=readStoreResult();
+      const base=currentResult.ok?currentResult.store:blankStore();
+      const merged=mergeStores(base,incoming);
+      const msg=currentResult.ok
+        ?`現在の記録を残したまま統合します。\nログ ${merged.logs.length}件、進度 ${Object.keys(merged.progress).length}件になります。\nよろしいですか？`
+        :'現在の保存データは読み取れません。選択したJSONを復元元として保存データを再作成します。\nよろしいですか？';
+      if(!confirm(msg))return;
+      writeStore(merged);render();
     }catch(err){ alert(`復元できませんでした：${err.message}`); }
+    finally{e.target.value='';}
   });
 }
 
