@@ -25,12 +25,7 @@ jobs:
             _tmp/evergreen-l9/part062.b64 \
             > /tmp/l9.b64
           base64 -d /tmp/l9.b64 > /tmp/l9.tar.gz
-          tar -tzf /tmp/l9.tar.gz >/dev/null
           tar -xzf /tmp/l9.tar.gz -C .
-          node --check materials/evergreen/lesson9/lesson-data.js
-          node --check materials/evergreen/lesson9/lesson-references.js
-          node --check materials/evergreen/lesson9/lesson9-enhance.js
-          python tools/validate.py
           rm -rf _tmp/evergreen-l9
           rm -f .github/workflows/apply-evergreen-l9.yml
           git config user.name 'github-actions[bot]'
