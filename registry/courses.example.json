@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "note": "Example only. Year/class/course assignment is operational state, not material identity.",
+  "courses": [
+    {
+      "schoolYear": "2026",
+      "grade": 3,
+      "course": "example",
+      "classes": [],
+      "lessonIds": [
+        "clover.lesson9"
+      ]
+    }
+  ]
+}
