@@ -27,6 +27,7 @@ jobs:
           base64 --decode /tmp/evergreen-l9-package.b64 > /tmp/evergreen-l9-package.zip
           unzip -t /tmp/evergreen-l9-package.zip
           unzip -o /tmp/evergreen-l9-package.zip -d .
+          git checkout -- .github/workflows/validate.yml
           rm -f .github/workflows/bootstrap-evergreen-l9.yml
 
       - name: Validate before commit
@@ -45,10 +46,11 @@ jobs:
           test ! -e /tmp/eg9-student/materials/evergreen/lesson9/source-lock.json
           test ! -e /tmp/eg9-student/_teacher
 
-      - name: Commit final Evergreen L9 implementation
+      - name: Commit lesson files only
         shell: bash
         run: |
           set -euo pipefail
+          git checkout -- .github/workflows/bootstrap-evergreen-l9.yml
           rm -rf _eg9_bootstrap
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
