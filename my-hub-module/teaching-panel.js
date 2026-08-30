@@ -93,13 +93,19 @@ function render(){
   const classOptions=['<option value="">クラスを選択</option>',...p.classes.map(c=>`<option ${c===p.currentClass?'selected':''}>${esc(c)}</option>`)].join('');
   const lessonCards=lessons.map(l=>{
     const saved=store.progress[progressKey(p.year,p.currentClass,l.id)];
-    const pos=saved?.questionKey ? `前回：${saved.questionKey}` : '進度記録なし';
+    let pos='進度記録なし';
+    if(saved?.questionKey){
+      if(saved.completed) pos=`前回：${saved.questionKey}まで完了`;
+      else if(saved.resumeQuestionKey && saved.resumeQuestionKey!==saved.questionKey) pos=`前回：${saved.questionKey}まで / 次回：${saved.resumeQuestionKey}`;
+      else pos=`次回：${saved.resumeQuestionKey || saved.questionKey}から`;
+    }
     const url=p.currentClass ? teacherUrl(l,p) : '#';
     const legacyNote=l.engine==='legacy' ? '<br>Legacy教材：自動進度保存は未対応' : '';
+    const goLabel=saved?.completed?'完了画面を開く':(saved?'続きから授業':'授業開始');
     return `<article class="teachhub-lesson">
       <h3>${esc(l.title)}</h3>
       <div class="teachhub-meta">${esc(l.series)} · ${esc(l.engine)}<br>${esc(pos)}${legacyNote}</div>
-      <a class="teachhub-go" href="${esc(url)}" target="_blank" rel="noopener" ${p.currentClass?'':'aria-disabled="true"'}>▶ ${saved?'続きから授業':'授業開始'}</a>
+      <a class="teachhub-go" href="${esc(url)}" target="_blank" rel="noopener" ${p.currentClass?'':'aria-disabled="true"'}>▶ ${goLabel}</a>
     </article>`;
   }).join('');
 

@@ -87,18 +87,27 @@ function saveProgress(){
     toast('My Hubからクラス指定で開くと進度を保存できます');
     return false;
   }
+  if(s.slideIndex < 0){ toast('問題を開始してから進度を保存してください'); return false; }
   const key=progressKey(s.lessonId,p.schoolYear,p.className);
-  const resumeSlideIndex = s.stage === 'output' ? s.slideIndex + 1 : s.slideIndex;
+  const total=Number(window.LESSON_META?.questionCount || 0);
+  let resumeSlideIndex = s.stage === 'output' ? s.slideIndex + 1 : s.slideIndex;
+  const completed = total > 0 && resumeSlideIndex >= total;
+  if(completed) resumeSlideIndex=total;
+  const resumeQuestion=window.LessonEngine?.getQuestionAt?.(resumeSlideIndex) || null;
+  const lastQuestion=completed ? window.LessonEngine?.getQuestionAt?.(total-1) : null;
   store.progress[key]={
     schoolYear:p.schoolYear,
     className:p.className,
     lessonId:s.lessonId,
-    questionId:s.questionId,
-    questionKey:s.questionKey,
+    questionId:s.questionId || lastQuestion?.id || '',
+    questionKey:s.questionKey || lastQuestion?.key || '',
     slideIndex:s.slideIndex,
     step:s.step,
     stage:s.stage,
     resumeSlideIndex,
+    resumeQuestionId:resumeQuestion?.id || '',
+    resumeQuestionKey:completed ? 'END' : (resumeQuestion?.key || s.questionKey || ''),
+    completed,
     savedAt:nowIso()
   };
   writeStore(store);
@@ -278,7 +287,12 @@ function resumeIfRequested(){
   const saved=store.progress[key];
   if(!saved || !Number.isInteger(saved.resumeSlideIndex)) return;
   const ok=window.LessonEngine?.jumpTo?.(saved.resumeSlideIndex);
-  if(ok) setTimeout(()=>toast(`前回の続き：${saved.questionKey || '保存位置'}から`),50);
+  if(ok){
+    const message=saved.completed
+      ? 'このLessonは前回までに完了しています'
+      : `続き：${saved.resumeQuestionKey || saved.questionKey || '保存位置'}から`;
+    setTimeout(()=>toast(message),50);
+  }
 }
 
 window.addEventListener('lesson:render',renderPastCount);

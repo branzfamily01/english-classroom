@@ -301,8 +301,14 @@ app.setAttribute('aria-label', `${meta.title || 'Lesson'} 授業用クリック�
 window.LessonEngine = Object.freeze({
   getState,
   getCurrent: ()=>current(),
+  getQuestionAt(index){
+    if(!Number.isInteger(index) || index < 0 || index >= data.length) return null;
+    const q=data[index];
+    return Object.freeze({id:q?.id || '', key:q?.key || '', focus:q?.focus || ''});
+  },
   jumpTo(index){
-    if(!Number.isInteger(index) || index < 0 || index >= data.length) return false;
+    // data.length is the END screen and is a valid resume target.
+    if(!Number.isInteger(index) || index < 0 || index > data.length) return false;
     slideIndex=index; step=0; render(); return true;
   }
 });
