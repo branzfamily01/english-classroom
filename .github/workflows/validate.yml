@@ -23,11 +23,33 @@ jobs:
           node --check _engine/v1/engine.js
           node --check _teacher/v1/teacher.js
           node --check my-hub-module/teaching-panel.js
+          node --check materials/evergreen/lesson8/lesson-data.js
+          node --check materials/evergreen/lesson8/lesson-references.js
+          node --check materials/evergreen/lesson8/lesson8-learning.js
+          node --check materials/evergreen/lesson8/lesson8-enhance.js
           node --check materials/evergreen/lesson9/lesson-data.js
           node --check materials/evergreen/lesson9/lesson-references.js
           node --check materials/evergreen/lesson9/lesson9-learning.js
           node --check materials/evergreen/lesson9/lesson9-enhance.js
           python tools/validate.py
+      - name: Verify Evergreen Lesson8 learning layer
+        run: |
+          node - <<'NODE'
+          global.window = global;
+          require('./materials/evergreen/lesson8/lesson-data.js');
+          require('./materials/evergreen/lesson8/lesson8-learning.js');
+          const data=global.LESSON_DATA || [];
+          if(data.length!==24) throw new Error(`expected 24 questions, got ${data.length}`);
+          for(const q of data){
+            if(!Array.isArray(q.hints) || q.hints.length<2) throw new Error(`${q.key}: needs at least two hints`);
+            if(!Array.isArray(q.outputChunks) || q.outputChunks.length<2) throw new Error(`${q.key}: needs manual output chunks`);
+            for(const h of q.hints){if(!h.en || !h.jp) throw new Error(`${q.key}: hint must have English + Japanese`);}
+          }
+          const final=global.LESSON_FINAL_CHECK?.sections || [];
+          if(final.length<5) throw new Error('Final Check must contain quick response, distinction, backup, try, finish');
+          if(!final.some(x=>x.type==='backup')) throw new Error('Final Check missing backup challenge');
+          console.log('Evergreen L8 learning layer OK');
+          NODE
       - name: Verify Evergreen Lesson9 learning layer
         run: |
           node - <<'NODE'
@@ -39,9 +61,7 @@ jobs:
           for(const q of data){
             if(!Array.isArray(q.hints) || q.hints.length<2) throw new Error(`${q.key}: needs at least two hints`);
             if(!Array.isArray(q.outputChunks) || q.outputChunks.length<2) throw new Error(`${q.key}: needs manual output chunks`);
-            for(const h of q.hints){
-              if(!h.en || !h.jp) throw new Error(`${q.key}: hint must have English + Japanese`);
-            }
+            for(const h of q.hints){if(!h.en || !h.jp) throw new Error(`${q.key}: hint must have English + Japanese`);}
           }
           const final=global.LESSON_FINAL_CHECK?.sections || [];
           if(final.length<5) throw new Error('Final Check must contain quick response, distinction, backup, try, finish');
@@ -50,6 +70,8 @@ jobs:
           NODE
       - name: Verify locked Clover source parity
         run: python tools/verify_clover_source_parity.py
+      - name: Verify Evergreen Lesson8 authoritative source parity
+        run: python tools/verify_evergreen8_source_parity.py
       - name: Verify Evergreen Lesson9 authoritative source parity
         run: python tools/verify_evergreen9_source_parity.py
       - name: Test allowlist lesson exports
@@ -64,11 +86,16 @@ jobs:
           python tools/student-export/export_lesson.py --lesson materials/evergreen/lesson9 --out /tmp/student-export
           test -f /tmp/student-export/materials/clover/lesson9/index.html
           test -f /tmp/student-export/materials/evergreen/lesson8/index.html
+          test -f /tmp/student-export/materials/evergreen/lesson8/lesson-references.js
+          test -f /tmp/student-export/materials/evergreen/lesson8/lesson8-learning.js
+          test -f /tmp/student-export/materials/evergreen/lesson8/lesson8-enhance.js
+          test -f /tmp/student-export/materials/evergreen/lesson8/lesson8.css
           test -f /tmp/student-export/materials/evergreen/lesson9/index.html
           test -f /tmp/student-export/materials/evergreen/lesson9/lesson-references.js
           test -f /tmp/student-export/materials/evergreen/lesson9/lesson9-learning.js
           test -f /tmp/student-export/materials/evergreen/lesson9/lesson9-enhance.js
           test -f /tmp/student-export/materials/evergreen/lesson9/lesson9.css
+          test ! -e /tmp/student-export/materials/evergreen/lesson8/source-lock.json
           test ! -e /tmp/student-export/materials/evergreen/lesson9/source-lock.json
           test ! -e /tmp/student-export/_teacher
           ! grep -R "_teacher/" /tmp/student-export
@@ -76,31 +103,17 @@ jobs:
           import importlib.util
           import json
           from pathlib import Path
-
           spec=importlib.util.spec_from_file_location('export_lesson','tools/student-export/export_lesson.py')
           mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
-          for bad in (
-              {'series':'../secret','lesson':'9'},
-              {'series':'clover','lesson':'../9'},
-              {'series':'clover/evil','lesson':'9'},
-          ):
-              try:
-                  mod.safe_target(Path('/tmp/student-export'),bad)
-              except RuntimeError:
-                  pass
-              else:
-                  raise SystemExit(f'unsafe target accepted: {bad}')
-
+          for bad in ({'series':'../secret','lesson':'9'},{'series':'clover','lesson':'../9'},{'series':'clover/evil','lesson':'9'}):
+              try: mod.safe_target(Path('/tmp/student-export'),bad)
+              except RuntimeError: pass
+              else: raise SystemExit(f'unsafe target accepted: {bad}')
           allowed=set(mod.SAFE_META_KEYS)|{'teacherMode'}
-          for path in (
-              Path('/tmp/student-export/materials/clover/lesson9/lesson-meta.json'),
-              Path('/tmp/student-export/materials/evergreen/lesson8/lesson-meta.json'),
-              Path('/tmp/student-export/materials/evergreen/lesson9/lesson-meta.json'),
-          ):
+          for path in (Path('/tmp/student-export/materials/clover/lesson9/lesson-meta.json'),Path('/tmp/student-export/materials/evergreen/lesson8/lesson-meta.json'),Path('/tmp/student-export/materials/evergreen/lesson9/lesson-meta.json')):
               meta=json.loads(path.read_text(encoding='utf-8'))
               assert meta.get('teacherMode') is False, path
               assert set(meta)<=allowed, (path,set(meta)-allowed)
-          assert 'migration' not in json.loads(Path('/tmp/student-export/materials/evergreen/lesson8/lesson-meta.json').read_text(encoding='utf-8'))
           PY
       - name: Test yearly release gate and Netlify-ready build
         run: |
@@ -114,7 +127,6 @@ jobs:
             exit 1
           fi
           test ! -e /tmp/year-gate/.student-site-build
-
           python tools/student-export/build_year_site.py \
             --year 2026 \
             --title "English Test - 2026" \
@@ -126,6 +138,8 @@ jobs:
           test -f /tmp/year-site/index.html
           test -f /tmp/year-site/robots.txt
           test -f /tmp/year-site/release-manifest.json
+          test -f /tmp/year-site/materials/evergreen/lesson8/lesson8-learning.js
+          test -f /tmp/year-site/materials/evergreen/lesson8/lesson8.css
           test -f /tmp/year-site/materials/evergreen/lesson9/lesson9-learning.js
           test -f /tmp/year-site/materials/evergreen/lesson9/lesson9.css
           test ! -e /tmp/year-site/_teacher
