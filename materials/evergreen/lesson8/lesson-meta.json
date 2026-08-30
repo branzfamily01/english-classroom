@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "evergreen.lesson8",
+  "title": "Evergreen Lesson8",
+  "series": "Evergreen",
+  "lesson": "8",
+  "grade": 1,
+  "subject": "English",
+  "engine": "legacy",
+  "status": "ready",
+  "teacherMode": false,
+  "studentExport": true,
+  "migration": "keep-legacy-phase1"
+}

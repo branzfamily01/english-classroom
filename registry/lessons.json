@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "lessons": [
+    {
+      "id": "evergreen.lesson8",
+      "title": "Evergreen Lesson8",
+      "series": "Evergreen",
+      "lesson": "8",
+      "grade": 1,
+      "engine": "legacy",
+      "path": "materials/evergreen/lesson8/",
+      "status": "ready",
+      "teacher": true,
+      "studentExport": true,
+      "note": "Phase 1: corrected legacy implementation. Do not schema-migrate yet."
+    },
+    {
+      "id": "clover.lesson9",
+      "title": "Clover Lesson9",
+      "series": "Clover",
+      "lesson": "9",
+      "grade": 3,
+      "engine": "v1",
+      "path": "materials/clover/lesson9/",
+      "status": "ready",
+      "teacher": true,
+      "studentExport": true
+    }
+  ]
+}

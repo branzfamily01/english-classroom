@@ -1,0 +1,9 @@
+{
+  "policy": "allowlist",
+  "files": [
+    "index.html",
+    "app-data.js",
+    "app-main.js",
+    "styles.css"
+  ]
+}

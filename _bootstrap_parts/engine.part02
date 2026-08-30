@@ -1,0 +1,91 @@
+>` : ''}
+    </div>`;
+  }
+  return '';
+}
+
+function renderQuestion(){
+  const q = current();
+  if(!q) return;
+  stage.className = 'stage clickable';
+  const stageName = currentStage();
+  const choices = (q.choices || []).map(c=>{
+    const correct = step >= 1 && normalizedChoice(c) === normalizedChoice(q.answer);
+    return `<span class="choice ${correct ? 'correct-choice' : ''}">${esc(c)}</span>`;
+  }).join('');
+
+  // Invariant: stage 0 may call Audio only with stage=0.
+  const qAudio = q.audioQ
+    ? '<button class="audio-btn" type="button" data-action="speak-question" title="問題文を読む">🔊</button>'
+    : '';
+
+  stage.innerHTML = `
+    <div class="topline"><span class="qno">${esc(q.key)}</span><span class="section">${esc(q.sectionName || '')}</span></div>
+    <h1>Question ${esc(q.key)}</h1>
+    <div class="question-card">
+      <p class="question">${esc(q.question)}</p>
+      ${qAudio}
+      ${choices ? `<div class="choice-grid">${choices}</div>` : ''}
+    </div>
+    <div class="content">${answerPanel(q, stageName)}</div>
+    <div class="stage-hint">${esc(labelForStage(stageName))}</div>`;
+}
+
+function render(){
+  if('speechSynthesis' in window) speechSynthesis.cancel();
+  revealed = false;
+  if(slideIndex === -2) renderCover();
+  else if(slideIndex === -1) renderGuide();
+  else if(slideIndex === data.length) renderEnd();
+  else renderQuestion();
+  slideCounter.textContent = counterText();
+  makeDots();
+  prevBtn.disabled = slideIndex === -2;
+  nextBtn.setAttribute('aria-label',
+    slideIndex >= 0 && slideIndex < data.length && step < maxStep()
+      ? '次の段階' : '次のスライド');
+  window.dispatchEvent(new CustomEvent('lesson:render', {detail:getState()}));
+}
+
+function getState(){
+  const q = current();
+  return Object.freeze({
+    lessonId: meta.id || '',
+    slideIndex,
+    step,
+    stage: slideIndex >= 0 && slideIndex < data.length ? currentStage() : '',
+    questionId: q?.id || '',
+    questionKey: q?.key || '',
+    focus: q?.focus || ''
+  });
+}
+
+function advance(){
+  if(slideIndex < 0){ slideIndex++; step=0; render(); return; }
+  if(slideIndex >= data.length){ slideIndex=-2; step=0; render(); return; }
+  if(step < maxStep()){ step++; renderQuestion(); makeDots(); window.dispatchEvent(new CustomEvent('lesson:render',{detail:getState()})); }
+  else { slideIndex++; step=0; render(); }
+}
+
+function backSlide(){ if(slideIndex <= -2) return; slideIndex--; step=0; render(); }
+function nextSlide(){ if(slideIndex < data.length){ slideIndex++; step=0; render(); } else { slideIndex=-2; step=0; render(); } }
+function resetStep(){ step=0; revealed=false; render(); }
+function openMenu(){ drawer.hidden=false; closeDrawer.focus(); }
+function closeMenu(){ drawer.hidden=true; menuBtn.focus(); }
+
+function buildList(){
+  qList.innerHTML = data.map((q,i)=>
+    `<button class="jump-btn" type="button" data-jump="${i}">${esc(q.key)}<small>${esc(q.sectionName || '')}</small></button>`
+  ).join('');
+}
+
+rate?.addEventListener('input',()=>{ rateValue.textContent = Number(rate.value).toFixed(1); });
+prevBtn.addEventListener('click',e=>{e.stopPropagation();backSlide();});
+nextBtn.addEventListener('click',e=>{e.stopPropagation();advance();});
+resetBtn.addEventListener('click',e=>{e.stopPropagation();resetStep();});
+menuBtn.addEventListener('click',e=>{e.stopPropagation();openMenu();});
+closeDrawer.addEventListener('click',closeMenu);
+drawer.addEventListener('click',e=>{if(e.target===drawer)closeMenu();});
+
+qList.addEventListener('click',e=>{
+  const b = e.target.closest('[

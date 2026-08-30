@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>English Classroom — Teacher Library</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;background:#f4f1eb;color:#172033;margin:0}
+main{max-width:960px;margin:auto;padding:32px 18px}
+h1{font-size:clamp(34px,6vw,58px);margin:.2em 0}
+p{color:#687489}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:24px}
+.card{background:#fff;border:1px solid #ddd6cc;border-radius:18px;padding:18px;box-shadow:0 8px 24px rgba(0,0,0,.05)}
+.card h2{margin:0 0 6px}.meta{font-size:13px;color:#7a8495;margin-bottom:12px}
+a{display:inline-block;background:#172033;color:#fff;text-decoration:none;border-radius:999px;padding:10px 14px;font-weight:850}
+.badge{display:inline-block;background:#eef1f5;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:800;margin-bottom:10px}
+</style>
+</head>
+<body><main>
+<div class="badge">TEACHER LIBRARY</div>
+<h1>English Classroom</h1>
+<p>教材の恒久ID・共通Engine・教師記録をまとめる授業HTML基盤。</p>
+<div id="grid" class="grid"></div>
+<script>
+(async()=>{
+ const r=await fetch('./registry/lessons.json',{cache:'no-store'});
+ const j=await r.json();
+ const grid=document.getElementById('grid');
+ grid.innerHTML=(j.lessons||[]).map(x=>`<article class="card"><h2>${x.title}</h2><div class="meta">${x.engine} · Grade ${x.grade} · ${x.status}</div>${x.engine==='v1'?`<a href="./${x.path}">開く</a>`:`<span>Legacy migration pending</span>`}</article>`).join('');
+})();
+</script>
+</main></body></html>

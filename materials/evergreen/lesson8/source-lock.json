@@ -1,0 +1,6 @@
+{
+  "sourceRepo": "branzfamily01/evergreen-lesson8",
+  "sourceCommit": "be8812213692435c083f09079b2f6d32e7d8d6c7",
+  "audioLeakFixCommit": "0864f2c22f414de2bf65a2929ac97e8d9ff18c20",
+  "migrationPolicy": "copy legacy files unchanged at this pinned commit"
+}

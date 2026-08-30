@@ -1,0 +1,33 @@
+f(b) openQuickNote(b.dataset.logType);
+  });
+  document.getElementById('teacherQuickSave').addEventListener('click',saveQuickNote);
+  document.getElementById('teacherQuickSkip').addEventListener('click',closeQuick);
+  document.getElementById('teacherQuickNote').addEventListener('keydown',e=>{
+    if(e.key==='Enter'){ e.preventDefault(); saveQuickNote(); }
+    if(e.key==='Escape'){ closeQuick(); }
+  });
+  document.getElementById('teacherPastBtn').addEventListener('click',showPast);
+  document.getElementById('teacherEndBtn').addEventListener('click',endLesson);
+  document.getElementById('teacherPastClose').addEventListener('click',()=>{modal.hidden=true;});
+  modal.addEventListener('click',e=>{if(e.target===modal) modal.hidden=true;});
+  updateBackupLabel();
+  renderPastCount();
+}
+
+
+function resumeIfRequested(){
+  const url=new URL(location.href);
+  if(url.searchParams.get('resume')!=='1') return;
+  const s=state(), p=params(), store=readStore();
+  const key=progressKey(s.lessonId,p.schoolYear,p.className);
+  const saved=store.progress[key];
+  if(!saved || !Number.isInteger(saved.resumeSlideIndex)) return;
+  const ok=window.LessonEngine?.jumpTo?.(saved.resumeSlideIndex);
+  if(ok) setTimeout(()=>toast(`前回の続き：${saved.questionKey || '保存位置'}から`),50);
+}
+
+window.addEventListener('lesson:render',renderPastCount);
+injectStyles();
+injectUI();
+resumeIfRequested();
+})();

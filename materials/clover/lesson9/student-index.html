@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#172033">
+<title>Clover Lesson9</title>
+<link rel="stylesheet" href="../../../_engine/v1/engine.css">
+<script>
+window.LESSON_META = {"schemaVersion": 1, "id": "clover.lesson9", "title": "Clover Lesson9", "series": "Clover", "lesson": "9", "grade": 3, "subject": "English", "engine": "v1", "status": "ready", "questionCount": 40, "formats": ["blank", "choice", "order"], "teacherMode": true, "studentExport": true};
+</script>
+</head>
+<body>
+<div id="app" class="app" tabindex="0">
+  <main class="stage" id="stage" aria-live="polite"></main>
+  <div class="toolbar" aria-label="スライド操作">
+    <button class="icon-btn" id="prevBtn" type="button" aria-label="前の問題">←</button>
+    <button class="icon-btn" id="menuBtn" type="button" aria-label="問題一覧">☰</button>
+    <div class="progress-wrap" aria-label="進行状況">
+      <span id="slideCounter" class="counter"></span>
+      <div id="stepDots" class="step-dots"></div>
+    </div>
+    <div class="voice-controls">
+      <label>Voice
+        <select id="voiceMode" aria-label="英語音声">
+          <option value="auto">Auto</option><option value="en-US">US</option><option value="en-GB">UK</option>
+        </select>
+      </label>
+      <label>Speed <span id="rateValue">1.0</span>
+        <input id="rate" type="range" min="0.7" max="3" step="0.1" value="1.0" aria-label="読み上げ速度">
+      </label>
+    </div>
+    <button class="icon-btn" id="resetBtn" type="button" aria-label="この問題を最初に戻す">↺</button>
+    <button class="icon-btn primary" id="nextBtn" type="button" aria-label="次の段階">→</button>
+  </div>
+  <div id="drawer" class="drawer" hidden>
+    <div class="drawer-card" role="dialog" aria-modal="true" aria-label="問題一覧">
+      <div class="drawer-head"><strong id="drawerTitle">問題一覧</strong><button id="closeDrawer" type="button" class="icon-btn">×</button></div>
+      <div id="questionList" class="question-list"></div>
+    </div>
+  </div>
+  <div id="toast" class="toast" hidden></div>
+</div>
+<script src="lesson-data.js"></script>
+<script src="../../../_engine/v1/audio.js"></script>
+<script src="../../../_engine/v1/engine.js"></script>
+</body>
+</html>

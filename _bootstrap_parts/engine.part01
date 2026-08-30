@@ -1,0 +1,72 @@
+ass="guide-card"><b>② 正解・根拠</b><p>正答後、どの文法・語法が決め手か確認。</p></div>
+      <div class="guide-card"><b>③ 誤答分析</b><p>品詞・語順・構文など、誤りの理由を確認。</p></div>
+      <div class="guide-card"><b>④ 和訳</b><p>正答を入れた文の意味を自然な日本語で確認。</p></div>
+      <div class="guide-card"><b>⑤ Output</b><p>日本語から核となる英語表現を再生。</p></div>
+      <div class="guide-card"><b>操作</b><p>クリック / Spaceで次段階。← →で問題移動。↺でリセット。</p></div>
+    </div>`;
+}
+
+function renderEnd(){
+  stage.className = 'stage clickable';
+  stage.innerHTML = `
+    <div class="intro" style="color:var(--ink)">
+      <div class="eyebrow">${esc(meta.title || 'Lesson')} COMPLETE</div>
+      <h1 style="color:var(--navy)">Final Check</h1>
+      <p style="color:#4b5a70">正解・根拠・誤答・和訳・Outputを確認。問題一覧から必要な項目へ戻れます。</p>
+      <div class="output-actions">
+        <button class="action-btn" type="button" data-action="open-menu">問題一覧を開く</button>
+        <button class="action-btn secondary" type="button" data-action="restart">最初から</button>
+      </div>
+    </div>`;
+}
+
+function normalizedChoice(s){
+  return String(s || '').replace(/^[①②③④⑤⑥⑦⑧]\s*/,'').trim();
+}
+
+function answerPanel(q, stageName){
+  if(stageName === 'problem'){
+    return `<div class="stage-panel"><div class="panel-label">考える</div><div class="method">まず自分で解答を決める。正解だけでなく、他の選択肢や語順を何のルールで判断するかまで考える。</div></div>`;
+  }
+  if(stageName === 'answer'){
+    return `<div class="stage-panel">
+      <div class="panel-label answer">✓ 正解</div>
+      <div class="answer-main">${esc(q.answer)}</div>
+      ${q.completed ? `<div class="completed">${esc(q.completed)}</div>` : ''}
+      <div class="output-actions">${(q.audioA || q.completed) ? '<button class="action-btn" type="button" data-action="speak-answer">🔊 正答英文</button>' : ''}</div>
+    </div>`;
+  }
+  if(stageName === 'reason'){
+    return `<div class="stage-panel">
+      <div class="panel-label reason">● なぜ正解か</div>
+      <div class="method"><b>今回のポイント：</b> ${esc(q.focus)}</div>
+      <ul class="bullets">${(q.correct || []).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
+      ${q.method ? `<div class="method"><b>見抜く順序：</b> ${esc(q.method)}</div>` : ''}
+    </div>`;
+  }
+  if(stageName === 'wrong'){
+    const items = (q.wrong || []).length
+      ? q.wrong
+      : ['この形式では、誤答選択肢ではなく語順・構文の崩れやすい箇所を確認する。'];
+    return `<div class="stage-panel">
+      <div class="panel-label wrong">× なぜ他はダメか</div>
+      <div class="wrong-list">${items.map(x=>`<div class="wrong-item">${esc(x)}</div>`).join('')}</div>
+    </div>`;
+  }
+  if(stageName === 'translation'){
+    return `<div class="stage-panel">
+      <div class="panel-label translation">訳 / 意味確認</div>
+      <div class="jp-translation">${esc(q.translation || '')}</div>
+      ${(q.audioA || q.completed) ? '<div class="output-actions"><button class="action-btn" type="button" data-action="speak-answer">🔊 英文を聞く</button></div>' : ''}
+    </div>`;
+  }
+  if(stageName === 'output'){
+    return `<div class="stage-panel">
+      <div class="panel-label output">Output</div>
+      <div class="output-cue">${esc(q.translation || q.question || '')}</div>
+      ${(q.reuse || []).length ? `<div class="method"><b>再利用する型：</b> ${esc(q.reuse.join(' '))}</div>` : ''}
+      <div class="output-actions">
+        ${(q.audioA || q.completed) ? '<button class="action-btn" type="button" data-action="speak-answer">🔊 音声で確認</button>' : ''}
+        <button class="action-btn secondary" type="button" data-action="toggle-answer">英文を見る</button>
+      </div>
+      ${revealed ? `<div class="hidden-answer">${esc(q.completed || q.answer || '')}</div

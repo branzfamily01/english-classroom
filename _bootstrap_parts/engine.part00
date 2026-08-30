@@ -1,0 +1,103 @@
+(()=>{
+'use strict';
+
+const meta = window.LESSON_META || {};
+const data = window.LESSON_DATA || [];
+const Audio = window.LessonAudio;
+
+const FLOWS = Object.freeze({
+  blank:     ['problem','answer','reason','wrong','translation','output'],
+  choice:    ['problem','answer','reason','wrong','translation','output'],
+  order:     ['problem','answer','reason','wrong','translation','output'],
+  translate: ['problem','answer','reason','output'],
+  write:     ['problem','answer','reason','output']
+});
+
+const app = document.getElementById('app');
+const stage = document.getElementById('stage');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const resetBtn = document.getElementById('resetBtn');
+const menuBtn = document.getElementById('menuBtn');
+const drawer = document.getElementById('drawer');
+const closeDrawer = document.getElementById('closeDrawer');
+const qList = document.getElementById('questionList');
+const slideCounter = document.getElementById('slideCounter');
+const stepDots = document.getElementById('stepDots');
+const rate = document.getElementById('rate');
+const rateValue = document.getElementById('rateValue');
+const toast = document.getElementById('toast');
+const drawerTitle = document.getElementById('drawerTitle');
+
+let slideIndex = -2; // cover, guide, questions..., end
+let step = 0;
+let revealed = false;
+
+function esc(s=''){
+  return String(s).replace(/[&<>"]/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'
+  }[c] || c));
+}
+
+function current(){ return data[slideIndex]; }
+function currentFlow(){ return FLOWS[current()?.format] || FLOWS.choice; }
+function currentStage(){ return currentFlow()[step] || 'problem'; }
+function maxStep(){ return Math.max(0, currentFlow().length - 1); }
+
+function showToast(msg){
+  if(!toast) return;
+  toast.textContent = msg;
+  toast.hidden = false;
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>{ toast.hidden = true; },1800);
+}
+
+function labelForStage(name){
+  return ({
+    problem:'問題',
+    answer:'正解',
+    reason:'正解の根拠',
+    wrong:'誤答分析',
+    translation:'和訳',
+    output:'Output'
+  })[name] || '';
+}
+
+function makeDots(){
+  stepDots.innerHTML = '';
+  if(slideIndex < 0 || slideIndex >= data.length) return;
+  const flow = currentFlow();
+  flow.forEach((name, i)=>{
+    const d = document.createElement('span');
+    d.className = 'step-dot' + (i <= step ? ' on' : '');
+    d.title = labelForStage(name);
+    stepDots.appendChild(d);
+  });
+}
+
+function counterText(){
+  if(slideIndex === -2) return 'START';
+  if(slideIndex === -1) return 'GUIDE';
+  if(slideIndex === data.length) return 'END';
+  return `${slideIndex+1} / ${data.length}`;
+}
+
+function renderCover(){
+  stage.className = 'stage cover-stage clickable';
+  const level = meta.grade ? `高校${meta.grade}年` : (meta.level || '');
+  stage.innerHTML = `
+    <div class="intro">
+      <div class="eyebrow">${esc(level)}${level && meta.series ? ' / ' : ''}${esc(meta.series || '')}</div>
+      <h1>${esc(meta.title || 'Lesson')}</h1>
+      <p>問題を先に考え、クリックするたびに <b>正解 → 根拠 → 誤答分析 → 和訳 → Output</b> へ進みます。英文はブラウザ音声で再生できます。</p>
+    </div>`;
+}
+
+function renderGuide(){
+  stage.className = 'stage clickable';
+  stage.innerHTML = `
+    <div class="topline"><span class="qno">授業の進め方</span><span class="section">Interactive Lesson Engine v1</span></div>
+    <h1>答えより先に「切る根拠」を言わせる</h1>
+    <div class="guide-grid">
+      <div class="guide-card"><b>① 問題</b><p>最初は問題だけ。問題音声から正答は漏れません。</p></div>
+      <div cl

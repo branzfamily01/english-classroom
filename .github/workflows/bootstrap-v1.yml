@@ -1,0 +1,104 @@
+name: Bootstrap English Classroom v1
+
+on:
+  push:
+    paths:
+      - '.github/workflows/bootstrap-v1.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build frozen Engine and Teacher files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _engine/v1 _teacher/v1
+          cat _bootstrap_parts/engine.part* > _engine/v1/engine.js
+          cat _bootstrap_parts/teacher.part* > _teacher/v1/teacher.js
+
+      - name: Rebuild Clover Lesson9 data and Engine CSS from pinned source
+        shell: bash
+        run: |
+          set -euo pipefail
+          src='https://raw.githubusercontent.com/branzfamily01/clover-lesson9/d4dd38bf18b0ef8f69a64844f7f7b09e82383c58/index.html'
+          curl -fsSL "$src" -o /tmp/clover-source.html
+          python - <<'PY'
+          from pathlib import Path
+          import json,re
+          s=Path('/tmp/clover-source.html').read_text(encoding='utf-8')
+          m=re.search(r'window\.LESSON9_DATA\s*=\s*(\[.*?\])\s*;\s*</script>',s,re.S)
+          assert m, 'Clover data block not found'
+          data=json.loads(m.group(1))
+          assert len(data)==40, len(data)
+          fm={1:'choice',2:'choice',3:'blank',4:'choice',5:'order'}
+          for q in data:
+              q['id']=f"clover.lesson9.{q['key']}"
+              q['format']=fm[q['section']]
+              q['audioQ']=q.pop('questionAudio','')
+              q['audioA']=q.pop('answerAudio','')
+          out='window.LESSON_DATA = '+json.dumps(data,ensure_ascii=False,indent=2)+';\n'
+          Path('materials/clover/lesson9/lesson-data.js').write_text(out,encoding='utf-8')
+          css=re.search(r'<style>\s*(.*?)\s*</style>',s,re.S)
+          assert css, 'Clover CSS not found'
+          css_text=css.group(1)+"\n\n/* Engine v1 generic hooks */\n.teacher-slot{display:none}\nbody.teacher-mode .teacher-slot{display:block}\n"
+          Path('_engine/v1/engine.css').write_text(css_text,encoding='utf-8')
+          PY
+
+      - name: Copy corrected Evergreen Lesson8 legacy files
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://raw.githubusercontent.com/branzfamily01/evergreen-lesson8/be8812213692435c083f09079b2f6d32e7d8d6c7'
+          dest='materials/evergreen/lesson8'
+          mkdir -p "$dest"
+          for f in index.html app-data.js app-main.js styles.css; do
+            curl -fsSL "$base/$f" -o "$dest/$f"
+          done
+
+      - name: Validate invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check _engine/v1/audio.js
+          node --check _engine/v1/engine.js
+          node --check _teacher/v1/teacher.js
+          python - <<'PY'
+          from pathlib import Path
+          import json,re
+          reg=json.loads(Path('registry/lessons.json').read_text(encoding='utf-8'))
+          for x in reg['lessons']:
+              assert not re.search(r'(^|/)20\d{2}(/|$)',x['path']), x
+              assert not re.search(r'20\d{2}',x['id']), x
+          s=Path('materials/clover/lesson9/lesson-data.js').read_text(encoding='utf-8')
+          data=json.loads(re.search(r'window\.LESSON_DATA\s*=\s*(\[.*\]);\s*$',s,re.S).group(1))
+          assert len(data)==40
+          assert {q['format'] for q in data} <= {'blank','choice','order','translate','write'}
+          assert 'window.LessonAudio = Object.freeze({ speak });' in Path('_engine/v1/audio.js').read_text(encoding='utf-8')
+          assert "Audio?.speak(current(), 0)" in Path('_engine/v1/engine.js').read_text(encoding='utf-8')
+          assert '/(さん|くん|君)/' in Path('_teacher/v1/teacher.js').read_text(encoding='utf-8')
+          student=Path('materials/clover/lesson9/student-index.html').read_text(encoding='utf-8')
+          assert '_teacher/' not in student
+          for f in ['index.html','app-data.js','app-main.js','styles.css']:
+              assert (Path('materials/evergreen/lesson8')/f).exists()
+          print('VALIDATION OK')
+          PY
+
+      - name: Commit clean v1
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _bootstrap_parts
+          rm -f .github/workflows/bootstrap-v1.yml
+          rmdir .github/workflows 2>/dev/null || true
+          rmdir .github 2>/dev/null || true
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Bootstrap English Classroom v1'
+          git push
