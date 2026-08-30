@@ -28,6 +28,19 @@
       "note": "Teacher-approved Engine v1 lesson. Ready for My Hub teacher use. Student yearly-site publication remains a separate explicit release step."
     },
     {
+      "id": "evergreen.lesson10",
+      "title": "Evergreen Lesson10 — 助動詞（3）",
+      "series": "Evergreen",
+      "lesson": "10",
+      "grade": 1,
+      "engine": "v1",
+      "path": "materials/evergreen/lesson10/",
+      "status": "review",
+      "teacher": true,
+      "studentExport": true,
+      "note": "New Engine v1 lesson built from the authoritative Lesson10 PPT/textbook/answer key and all modal reference sources. Teacher visual/content approval required before My Hub ready status or student yearly-site release."
+    },
+    {
       "id": "clover.lesson9",
       "title": "Clover Lesson9",
       "series": "Clover",
