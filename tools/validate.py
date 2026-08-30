@@ -92,7 +92,8 @@ for lesson in lessons:
         if (ROOT / student_path).is_file():
             student = read(student_path).lower()
             check("_teacher/" not in student and "teacher.js" not in student, f"student entry references teacher code: {lesson_id}")
-            check('"teachermode": false' in student, f"student entry must explicitly disable teacher mode: {lesson_id}")
+            check(re.search(r'"teachermode"\s*:\s*false', student) is not None,
+                  f"student entry must explicitly disable teacher mode: {lesson_id}")
 
 audio = read("_engine/v1/audio.js")
 check("window.LessonAudio = Object.freeze({ speak });" in audio,
@@ -162,20 +163,37 @@ check("schoolYearNow" in myhub and "d.getMonth()<3" in myhub,
 check("localStorage.setItem(CFG.storeKey,JSON.stringify(obj))" not in myhub,
       "unsafe full-replace restore returned")
 
-legacy_policy = read_json("materials/evergreen/lesson8/student-export.json")
-check(legacy_policy.get("policy") == "allowlist", "Evergreen legacy export must be allowlist")
-for name in legacy_policy.get("files", []):
-    check("teacher" not in name.lower(), f"teacher-like file allowlisted: {name}")
-    check((ROOT / "materials/evergreen/lesson8" / name).is_file(), f"legacy allowlist file missing: {name}")
+# Evergreen Lesson 8 lesson-specific quality gates.
+eg8_meta = read_json("materials/evergreen/lesson8/lesson-meta.json")
+eg8_data = parse_lesson_data("materials/evergreen/lesson8/lesson-data.js")
+check(len(eg8_data) == eg8_meta.get("questionCount") == 24, "Evergreen Lesson8 must contain 24 questions")
+check({q.get("format") for q in eg8_data} == FORMATS, "Evergreen Lesson8 must exercise all five frozen formats")
+for q in eg8_data:
+    key = q.get("key")
+    check(bool(q.get("focus")), f"Evergreen L8 missing focus: {key}")
+    check(isinstance(q.get("mapPath"), list) and q.get("mapPath"), f"Evergreen L8 missing mapPath: {key}")
+    check(isinstance(q.get("visual"), dict) and q.get("visual", {}).get("kind"), f"Evergreen L8 missing visual: {key}")
+    check(isinstance(q.get("hints"), list) and len(q.get("hints", [])) >= 2, f"Evergreen L8 needs >=2 hints: {key}")
+    check(isinstance(q.get("outputChunks"), list) and len(q.get("outputChunks", [])) >= 2, f"Evergreen L8 missing manual output chunks: {key}")
 
-eg8 = read("materials/evergreen/lesson8/app-main.js")
-check('<div class="card-actions">${audioButton(q.full)}<button class="reveal-btn">' not in eg8,
-      "Evergreen EX1 problem-stage answer audio returned")
-check("${audioButton(q.answer)}<div class=\"choices\">" not in eg8,
-      "Evergreen EX2 problem-stage answer audio returned")
-check("audioButton(q.en.replace(/\\(\\s*\\)/g, 'blank'))" in eg8,
-      "Evergreen EX1 blank audio fix missing")
-check("${audioButton(q.prompt)}" in eg8, "Evergreen EX2 prompt audio fix missing")
+eg8_student = read("materials/evergreen/lesson8/student-index.html").lower()
+for needed in ("lesson-references.js","lesson8-learning.js","lesson8-enhance.js","lesson8.css"):
+    check(needed in eg8_student, f"Evergreen L8 student entry missing asset: {needed}")
+eg8_policy = read_json("materials/evergreen/lesson8/student-export.json")
+check(eg8_policy.get("policy") == "allowlist", "Evergreen L8 student export must be allowlist")
+check(set(eg8_policy.get("files", [])) == {"lesson-references.js","lesson8-learning.js","lesson8-enhance.js","lesson8.css"},
+      "Evergreen L8 optional student asset allowlist changed")
+eg8_learning = read("materials/evergreen/lesson8/lesson8-learning.js")
+check("window.LESSON_FINAL_CHECK" in eg8_learning,
+      "Evergreen L8 Final Check missing")
+eg8_refs = read("materials/evergreen/lesson8/lesson-references.js")
+check("window.LESSON_REFERENCES" in eg8_refs and "能力・許可" in eg8_refs and "可能性・推量" in eg8_refs,
+      "Evergreen L8 Lesson8 modal reference map missing")
+eg8_enhance = read("materials/evergreen/lesson8/lesson8-enhance.js")
+check("lesson:render" in eg8_enhance and "conceptMapDrawer" in eg8_enhance,
+      "Evergreen L8 enhancement hooks missing")
+check("hint-mark" in eg8_enhance,
+      "Evergreen L8 hint highlighting missing")
 
 # Evergreen Lesson 9 keeps extra lesson-specific quality gates on top of registry-driven v1 checks.
 eg9_meta = read_json("materials/evergreen/lesson9/lesson-meta.json")
