@@ -72,6 +72,23 @@ a{{display:inline-block;text-decoration:none;background:#172033;color:#fff;borde
 </main></body></html>'''
 
 
+def assert_release_ready(lesson: Path, allow_review: bool) -> dict:
+    meta_path = lesson.resolve() / "lesson-meta.json"
+    if not meta_path.is_file():
+        raise RuntimeError(f"lesson-meta.json missing: {meta_path}")
+    meta = module.read_json(meta_path)
+    status = str(meta.get("status", ""))
+    export_enabled = meta.get("studentExport") is True
+    if not export_enabled:
+        raise RuntimeError(f"student export disabled: {meta.get('id', lesson)}")
+    if status != "ready" and not allow_review:
+        raise RuntimeError(
+            f"lesson is not release-ready: {meta.get('id', lesson)} status={status!r}; "
+            "complete the audit and set status='ready' before yearly student release"
+        )
+    return meta
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--year", required=True)
@@ -80,7 +97,17 @@ def main() -> None:
     ap.add_argument("--lesson", action="append", required=True, type=Path,
                     help="explicitly released lesson directory; repeat for each lesson")
     ap.add_argument("--force", action="store_true")
+    ap.add_argument(
+        "--allow-review",
+        action="store_true",
+        help="test-only escape hatch: permit status=review in a disposable build; do not use for production release",
+    )
     args = ap.parse_args()
+
+    # Validate all requested lessons before touching the output directory. This keeps a
+    # failed release gate from leaving a half-built student site behind.
+    for lesson in args.lesson:
+        assert_release_ready(lesson, args.allow_review)
 
     out = prepare_out(args.out, args.force)
     cards = []
