@@ -1,6 +1,53 @@
 {
-  "sourceRepo": "branzfamily01/evergreen-lesson8",
-  "sourceCommit": "be8812213692435c083f09079b2f6d32e7d8d6c7",
-  "audioLeakFixCommit": "0864f2c22f414de2bf65a2929ac97e8d9ff18c20",
-  "migrationPolicy": "copy legacy files unchanged at this pinned commit"
+  "schemaVersion": 1,
+  "authoritative": [
+    {
+      "file": "09_Evergreen English Grammar 47_Lesson8 (1).pptx",
+      "sha256": "800483109344b82f60c78ae2220e57eea6126262024f69d1360c21d9c6ad3262",
+      "role": "Lesson 8 source examples / exercise text"
+    },
+    {
+      "file": "Evergreen 47 Lessons updated（本冊）.docx",
+      "sha256": "a2feb442ba6a841c5b29c6911e2c84925692b0e768d489b348f0b6773166e0e5",
+      "role": "authoritative Lesson 8 textbook content"
+    },
+    {
+      "file": "Evergreen 47 Lessons updated（解答）.docx",
+      "sha256": "ac4b0bef5b2c62bec524270b5c0245b50d3d80046445b5285859ce005eb67667",
+      "role": "model answers and Japanese translations"
+    }
+  ],
+  "supplementary": [
+    {
+      "file": "助動詞のすべて(2).pdf",
+      "sha256": "ef5579152602f68be613c6e8d9f98c465762e7a30cefc24c7e78a9edcddf00f8",
+      "role": "modal-system overview and Lesson 8 concept-map source"
+    },
+    {
+      "file": "助動詞　ニュアンスを基にした分類　20140617　(1).docx",
+      "sha256": "0ea1a910a4533cf03ac89c9cb6ac0a73903c6e13f55dd5ab56aab2aaceb34e70",
+      "role": "core-concept explanations"
+    },
+    {
+      "file": "助動詞分類　一覧(1).xlsx",
+      "sha256": "d7fc508b3ecd82d34fb98f3ab0e350db4de5d5e080a9d3505553a818c01def3e",
+      "role": "modal classification cross-check"
+    },
+    {
+      "file": "Visual Modal Notes (2)(2).pdf",
+      "sha256": "144213a709eeb0991a48b862a9f02e7ad388ef7042eedbf04b6a53ddb0b0583b",
+      "role": "supplementary visual modal notes"
+    },
+    {
+      "file": "助動詞 have pp は２種類(1).docx",
+      "sha256": "3a8ac1c51debff20eb901349f7bde661f24f17f0491d7c73aad70dad896e1b73",
+      "role": "broader modal system context; not directly taught in Lesson 8"
+    },
+    {
+      "file": "would often, used to(1).pdf",
+      "sha256": "a1c0dfabddd4ce1070b2bc887b3986e0d0ed60b22de5b731c4077bee88e87219",
+      "role": "Lesson 9 boundary context; not directly taught in Lesson 8"
+    }
+  ],
+  "policy": "PPTX, textbook and answer-book content are authoritative for questions, accepted answers and translations. Supplementary modal sources inform explanations and maps only and never override the authoritative exercise answers."
 }
