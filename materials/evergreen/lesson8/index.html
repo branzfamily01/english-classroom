@@ -1,140 +1,53 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#14213d" />
-  <title>Evergreen Lesson8</title>
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#172033">
+<title>Evergreen Lesson8 — 助動詞（1）</title>
+<link rel="stylesheet" href="../../../_engine/v1/engine.css">
+<link rel="stylesheet" href="lesson8.css">
+<script>
+window.LESSON_META = {"schemaVersion":1,"id":"evergreen.lesson8","title":"Evergreen Lesson8 — 助動詞（1）","series":"Evergreen","lesson":"8","grade":1,"subject":"English","engine":"v1","status":"review","questionCount":24,"formats":["blank","choice","order","translate","write"],"teacherMode":true,"studentExport":true,"features":["concept-map","question-diagrams","source-underlines","small-step-hints","backup-technique","final-check"]};
+</script>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand-wrap">
-      <button id="menuBtn" class="icon-btn" aria-label="メニューを開く">☰</button>
-      <div>
-        <div class="brand">Evergreen Lesson8</div>
-        <div class="subtitle">助動詞（1）｜話し手の見方をことばにする</div>
-      </div>
+<div id="app" class="app" tabindex="0">
+  <main class="stage" id="stage" aria-live="polite"></main>
+  <div class="toolbar" aria-label="スライド操作">
+    <button class="icon-btn" id="prevBtn" type="button" aria-label="前の画面">←</button>
+    <button class="icon-btn" id="menuBtn" type="button" aria-label="問題一覧">☰</button>
+    <div class="progress-wrap" aria-label="進行状況">
+      <span id="slideCounter" class="counter"></span>
+      <div id="stepDots" class="step-dots"></div>
     </div>
-    <div class="top-actions">
-      <label class="rate-control" title="英語音声の速さ">
-        <span>🔊</span>
-        <select id="speechRate" aria-label="英語音声の速さ">
-          <option value="0.7">0.7×</option>
-          <option value="0.85">0.85×</option>
-          <option value="1" selected>1.0×</option>
-          <option value="1.2">1.2×</option>
-          <option value="1.5">1.5×</option>
-          <option value="2">2.0×</option>
-          <option value="2.5">2.5×</option>
-          <option value="3">3.0×</option>
+    <div class="voice-controls">
+      <label>Voice
+        <select id="voiceMode" aria-label="英語音声">
+          <option value="auto">Auto</option><option value="en-US">US</option><option value="en-GB">UK</option>
         </select>
       </label>
-      <button id="fullscreenBtn" class="text-btn">全画面</button>
-      <button id="mapBtnTop" class="primary-btn">助動詞一覧</button>
+      <label>Speed <span id="rateValue">1.0</span>
+        <input id="rate" type="range" min="0.7" max="3" step="0.1" value="1.0" aria-label="読み上げ速度">
+      </label>
     </div>
-  </header>
-
-  <div class="app-shell">
-    <aside id="sidebar" class="sidebar" aria-label="レッスンメニュー">
-      <div class="side-head">
-        <strong>Lesson 8</strong>
-        <button id="closeMenuBtn" class="icon-btn side-close" aria-label="メニューを閉じる">×</button>
-      </div>
-      <nav id="navList" class="nav-list"></nav>
-      <div class="side-note">
-        <strong>授業の軸</strong>
-        <span>① 全体像 → ② 選ぶ → ③ なぜ？ → ④ もう一度使う</span>
-      </div>
-    </aside>
-
-    <main id="main" class="main" tabindex="-1">
-      <section id="home" class="page active-page">
-        <div class="hero">
-          <div class="eyebrow">EVERGREEN ENGLISH GRAMMAR 47 LESSONS</div>
-          <h1>助動詞は「話し手フィルター」</h1>
-          <p class="lead">同じ出来事でも、<b>できる・してよい・しなければならない・かもしれない・違いない</b>のように、話し手の判断や気持ちを加えるのが助動詞です。</p>
-          <div class="hero-actions">
-            <button class="primary-btn jump" data-target="map-intro">まず全体地図を見る</button>
-            <button class="secondary-btn" id="openMapHero">いつでも見られる一覧表</button>
-          </div>
-        </div>
-
-        <div class="compare-grid" aria-label="話し手フィルターの例">
-          <article class="compare-card fact">
-            <span class="pill">助動詞なし</span>
-            <div class="en">She is home.</div>
-            <div class="ja">彼女は家にいます。</div>
-            <p>状態をそのまま述べる。</p>
-            <button class="audio-btn" data-speak="She is home.">▶ 英語</button>
-          </article>
-          <article class="compare-card strong">
-            <span class="pill">強い推量</span>
-            <div class="en">She must be home.</div>
-            <div class="ja">彼女は家にいるに違いない。</div>
-            <p>根拠から強く結論づける。</p>
-            <button class="audio-btn" data-speak="She must be home.">▶ 英語</button>
-          </article>
-          <article class="compare-card possible">
-            <span class="pill">可能性</span>
-            <div class="en">She may be home.</div>
-            <div class="ja">彼女は家にいるかもしれない。</div>
-            <p>可能性を残して述べる。</p>
-            <button class="audio-btn" data-speak="She may be home.">▶ 英語</button>
-          </article>
-          <article class="compare-card impossible">
-            <span class="pill">強い否定推量</span>
-            <div class="en">She can’t be home.</div>
-            <div class="ja">彼女が家にいるはずがない。</div>
-            <p>根拠から「ありえない」と判断する。</p>
-            <button class="audio-btn" data-speak="She can't be home.">▶ 英語</button>
-          </article>
-        </div>
-
-        <div class="key-rule">
-          <div class="rule-icon">★</div>
-          <div>
-            <h2>最初にこれだけ</h2>
-            <div class="formula"><span>助動詞</span> ＋ <b>動詞の原形</b></div>
-            <p>can speaks / must to go のようにはしません。<b>can speak / must go / should stay</b> が基本です。</p>
-          </div>
-        </div>
-      </section>
-
-      <section id="map-intro" class="page"></section>
-      <section id="chapter-a" class="page"></section>
-      <section id="chapter-b" class="page"></section>
-      <section id="chapter-c" class="page"></section>
-      <section id="exercise1" class="page"></section>
-      <section id="exercise2" class="page"></section>
-      <section id="exercise3" class="page"></section>
-      <section id="exercise4" class="page"></section>
-      <section id="contrast" class="page"></section>
-      <section id="try" class="page"></section>
-      <section id="exit" class="page"></section>
-    </main>
+    <button class="icon-btn" id="resetBtn" type="button" aria-label="この問題を最初に戻す">↺</button>
+    <button class="icon-btn primary" id="nextBtn" type="button" aria-label="次の画面">→</button>
   </div>
-
-  <button id="floatingMapBtn" class="floating-map" aria-label="助動詞一覧を開く">一覧表</button>
-
-  <div id="mapModal" class="modal" aria-hidden="true">
-    <div class="modal-backdrop" data-close-modal></div>
-    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="modal-head">
-        <div>
-          <div class="eyebrow">REFERENCE</div>
-          <h2 id="modalTitle">助動詞のすべて｜授業用・改訂版</h2>
-          <p>数値の「確信度」は固定せず、場面・根拠・話し手の態度で整理します。</p>
-        </div>
-        <button id="closeMapBtn" class="icon-btn modal-close" aria-label="一覧表を閉じる">×</button>
-      </div>
-      <div class="modal-tabs" id="mapTabs"></div>
-      <div id="mapContent" class="modal-content"></div>
+  <div id="drawer" class="drawer" hidden>
+    <div class="drawer-card" role="dialog" aria-modal="true" aria-label="問題一覧">
+      <div class="drawer-head"><strong id="drawerTitle">問題一覧</strong><button id="closeDrawer" type="button" class="icon-btn">×</button></div>
+      <div id="questionList" class="question-list"></div>
     </div>
   </div>
-
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="app-data.js"></script>
-  <script src="app-main.js"></script>
+  <div id="toast" class="toast" hidden></div>
+</div>
+<script src="lesson-data.js"></script>
+<script src="lesson-references.js"></script>
+<script src="lesson8-learning.js"></script>
+<script src="../../../_engine/v1/audio.js"></script>
+<script src="../../../_engine/v1/engine.js"></script>
+<script src="../../../_teacher/v1/teacher.js"></script>
+<script src="lesson8-enhance.js"></script>
 </body>
 </html>
