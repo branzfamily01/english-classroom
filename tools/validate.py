@@ -54,6 +54,20 @@ check("Audio?.speak(current(), 0)" in engine, "stage 0 must call Audio with stag
 check("const FLOWS = Object.freeze" in engine, "format flow table missing")
 check("getQuestionAt(index)" in engine, "engine question lookup API missing")
 check("index > data.length" in engine, "END screen must be a valid resume target")
+check("isHintStage" in engine and "hintPanel" in engine,
+      "small-step hint flow missing")
+check("backupMarkup" in engine and "hide-more" in engine,
+      "Back Up Technique output flow missing")
+check("e.key==='ArrowRight'" in engine and "e.key==='ArrowLeft'" in engine,
+      "arrow keys must navigate one screen forward/back")
+check("setupToolbarToggle" in engine,
+      "toolbar minimize control missing")
+
+engine_css = read("_engine/v1/engine.css")
+check(".toolbar.is-collapsed" in engine_css,
+      "toolbar compact style missing")
+check(".backup-chunks" in engine_css and ".hint-panel" in engine_css,
+      "hint/output practice styles missing")
 
 teacher = read("_teacher/v1/teacher.js")
 check("const STORAGE_KEY = 'teaching.v1';" in teacher, "teacher storage key changed")
@@ -64,6 +78,12 @@ check("resumeQuestionKey" in teacher and "completed" in teacher,
       "progress must store explicit next-question/completion state")
 check("s.slideIndex < 0" in teacher,
       "progress save must reject cover/guide before a question starts")
+check("deleteLog" in teacher and "data-delete-log" in teacher,
+      "teacher logs must be deletable")
+check("is-minimized" in teacher and "enableDrag" in teacher,
+      "teacher panel must be minimizable and movable")
+check("Teacher Guide" in teacher,
+      "teacher-only guide missing")
 
 myhub = read("my-hub-module/teaching-panel.js")
 check("次回：${saved.resumeQuestionKey}" in myhub,
@@ -129,21 +149,26 @@ check("_teacher/" not in eg9_student and "teacher.js" not in eg9_student,
       "Evergreen L9 student entry references teacher code")
 check('"teachermode": false' in eg9_student,
       "Evergreen L9 student entry must explicitly disable teacher mode")
-for needed in ("lesson-references.js","lesson9-enhance.js","lesson9.css"):
+for needed in ("lesson-references.js","lesson9-learning.js","lesson9-enhance.js","lesson9.css"):
     check(needed in eg9_student, f"Evergreen L9 student entry missing asset: {needed}")
 eg9_policy = read_json("materials/evergreen/lesson9/student-export.json")
 check(eg9_policy.get("policy") == "allowlist", "Evergreen L9 student export must be allowlist")
-check(set(eg9_policy.get("files", [])) == {"lesson-references.js","lesson9-enhance.js","lesson9.css"},
+check(set(eg9_policy.get("files", [])) == {"lesson-references.js","lesson9-learning.js","lesson9-enhance.js","lesson9.css"},
       "Evergreen L9 optional student asset allowlist changed")
 
+learning = read("materials/evergreen/lesson9/lesson9-learning.js")
+check("window.LESSON_FINAL_CHECK" in learning and "outputChunks" in learning and "hints" in learning,
+      "Evergreen L9 learning layer missing")
 refs = read("materials/evergreen/lesson9/lesson-references.js")
 check("window.LESSON_REFERENCES" in refs and "used to / would often" in refs,
       "Evergreen L9 reference map missing")
 enhance = read("materials/evergreen/lesson9/lesson9-enhance.js")
 check("lesson:render" in enhance and "conceptMapDrawer" in enhance,
       "Evergreen L9 enhancement hooks missing")
-check("state.step >= 1" in enhance,
-      "Evergreen L9 'where am I' must stay hidden before answer reveal")
+check("const afterAnswer=['answer','reason','wrong','translation','output'].includes(state.stage)" in enhance,
+      "Evergreen L9 'where am I' must stay hidden during problem/hints")
+check("hint-mark" in enhance,
+      "Evergreen L9 hint highlighting missing")
 
 check(not (ROOT / "_bootstrap_parts").exists(), "temporary bootstrap parts still present")
 check(not (ROOT / ".github/workflows/bootstrap-v1.yml").exists(), "one-time bootstrap workflow still present")
