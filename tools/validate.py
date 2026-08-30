@@ -44,12 +44,24 @@ check("speakText" in audio and "Object.freeze({ speakText" not in audio,
 engine = read("_engine/v1/engine.js")
 check("Audio?.speak(current(), 0)" in engine, "stage 0 must call Audio with stage=0")
 check("const FLOWS = Object.freeze" in engine, "format flow table missing")
+check("getQuestionAt(index)" in engine, "engine question lookup API missing")
+check("index > data.length" in engine, "END screen must be a valid resume target")
 
 teacher = read("_teacher/v1/teacher.js")
 check("const STORAGE_KEY = 'teaching.v1';" in teacher, "teacher storage key changed")
 check(all(x in teacher for x in ("misconception","question","explanation","addition","improvement")),
       "five teaching log types missing")
 check("/(さん|くん|君)/" in teacher, "accidental-name warning missing")
+check("resumeQuestionKey" in teacher and "completed" in teacher,
+      "progress must store explicit next-question/completion state")
+check("s.slideIndex < 0" in teacher,
+      "progress save must reject cover/guide before a question starts")
+
+myhub = read("my-hub-module/teaching-panel.js")
+check("次回：${saved.resumeQuestionKey}" in myhub,
+      "My Hub candidate must display explicit next question")
+check("完了画面を開く" in myhub,
+      "My Hub candidate must distinguish completed lessons")
 
 clover_meta = read_json("materials/clover/lesson9/lesson-meta.json")
 clover_js = read("materials/clover/lesson9/lesson-data.js")
@@ -89,6 +101,7 @@ check("${audioButton(q.prompt)}" in eg, "Evergreen EX2 prompt audio fix missing"
 
 check(not (ROOT / "_bootstrap_parts").exists(), "temporary bootstrap parts still present")
 check(not (ROOT / ".github/workflows/bootstrap-v1.yml").exists(), "one-time bootstrap workflow still present")
+check(not (ROOT / ".github/workflows/audit-progress-fix.yml").exists(), "one-time audit fix workflow still present")
 
 if errors:
     print("VALIDATION FAILED")
